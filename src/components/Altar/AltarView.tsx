@@ -22,22 +22,23 @@ export default function AltarView() {
   };
 
   return (
-    <div className="relative flex flex-col items-center px-4" data-altar-capture>
+    <div className="relative flex flex-col items-center px-2 sm:px-4" data-altar-capture>
       {/* Header */}
-      <div className="text-center mb-8">
+      <div className="text-center mb-4 sm:mb-8">
         <h1
-          className="font-zhu text-4xl text-c-gold text-glow-gold mb-2"
+          className="font-zhu text-2xl sm:text-4xl text-c-gold text-glow-gold mb-1 sm:mb-2"
           style={{ letterSpacing: '0.1em' }}
         >
           祖宗牌位
         </h1>
-        <p className="text-c-muted text-xs font-mono">CYBER ZHEN ZU · DIGITAL ALTAR</p>
+        <p className="text-c-muted text-[9px] sm:text-xs font-mono hidden sm:block">CYBER ZHEN ZU · DIGITAL ALTAR</p>
       </div>
 
       {/* Main altar structure */}
-      <div className="relative flex flex-col items-center">
+      <div className="relative flex flex-col items-center w-full">
+
         {/* Lanterns row */}
-        <div className="flex justify-between w-full max-w-2xl mb-4">
+        <div className="flex justify-between w-full max-w-2xl mb-2 sm:mb-4">
           <Lantern side="left" />
           <Lantern side="right" />
         </div>
@@ -46,14 +47,14 @@ export default function AltarView() {
         <AncestorTablet ancestor={activeAncestor} ancestors={ancestors} setActive={setActiveAncestor} />
 
         {/* Incense + Bell row */}
-        <div className="flex items-end gap-12 mt-4 mb-4">
+        <div className="flex items-end gap-6 sm:gap-12 mt-3 sm:mt-4 mb-3 sm:mb-4">
           <IncenseHolder />
           <Bell />
         </div>
 
         {/* Altar table */}
         <div
-          className="relative w-full max-w-2xl rounded-lg p-5"
+          className="relative w-full max-w-2xl rounded-lg p-3 sm:p-5"
           style={{
             background: 'linear-gradient(180deg, #1c1610 0%, #14100a 100%)',
             border: '1px solid rgba(244,168,37,0.25)',
@@ -70,8 +71,8 @@ export default function AltarView() {
             style={{ background: 'linear-gradient(90deg, transparent, #e63946, transparent)', opacity: 0.6 }}
           />
 
-          <div className="text-center mb-3">
-            <span className="font-zhu text-sm text-c-muted" style={{ letterSpacing: '0.2em' }}>
+          <div className="text-center mb-2 sm:mb-3">
+            <span className="font-zhu text-xs sm:text-sm text-c-muted" style={{ letterSpacing: '0.2em' }}>
               — 供桌 —
             </span>
           </div>
@@ -85,11 +86,11 @@ export default function AltarView() {
         </div>
 
         {/* Altar legs */}
-        <div className="flex gap-8 mt-1">
+        <div className="flex gap-4 sm:gap-8 mt-1">
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="w-4 h-8 rounded-b"
+              className="w-3 sm:w-4 h-6 sm:h-8 rounded-b"
               style={{
                 background: 'linear-gradient(180deg, #1a1a25, #0d0d12)',
                 border: '1px solid #2a2a35',
@@ -100,7 +101,7 @@ export default function AltarView() {
 
         {/* Stone base */}
         <div
-          className="w-full max-w-3xl h-2 rounded-b"
+          className="w-full max-w-3xl h-1 sm:h-2 rounded-b"
           style={{
             background: 'linear-gradient(180deg, #2a2a35, #1a1a25)',
             boxShadow: '0 4px 20px rgba(0,0,0,0.5)',

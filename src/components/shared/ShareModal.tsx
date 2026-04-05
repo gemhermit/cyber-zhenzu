@@ -98,7 +98,7 @@ export default function ShareModal({ onClose, pageTitle }: ShareModalProps) {
         ctx.fillStyle = '#f4a825';
         ctx.font = `bold ${Math.max(16, Math.min(dst.width * 0.05, 22))}px serif`;
         ctx.textAlign = 'center';
-        ctx.fillText(`${displayTitle} · 赛博祭祖`, dst.width / 2, src.height + 24);
+        ctx.fillText(displayTitle, dst.width / 2, src.height + 24);
 
         // QR
         const qrSize = Math.min(96, dst.width * 0.32);
@@ -136,7 +136,7 @@ export default function ShareModal({ onClose, pageTitle }: ShareModalProps) {
   const handleDownload = useCallback(() => {
     if (!previewSrc) return;
     const link = document.createElement('a');
-    link.download = `赛博祭祖-${displayTitle}.png`;
+    link.download = `赛博祭祖_${displayTitle}.png`;
     link.href = previewSrc;
     link.click();
   }, [previewSrc, displayTitle]);
@@ -146,17 +146,17 @@ export default function ShareModal({ onClose, pageTitle }: ShareModalProps) {
     try {
       const res = await fetch(previewSrc);
       const blob = await res.blob();
-      const file = new File([blob], `赛博祭祖-${displayTitle}.png`, { type: 'image/png' });
+      const file = new File([blob], `赛博祭祖_${displayTitle}.png`, { type: 'image/png' });
       if (navigator.canShare?.({ files: [file] })) {
         await navigator.share({
           files: [file],
           title: `赛博祭祖 · ${displayTitle}`,
-          text: `我在赛博祭祖${displayTitle}祈福🙏\n${shareUrl}`,
+          text: `我在赛博祭祖 · ${displayTitle}祈福🙏\n${shareUrl}`,
         });
       } else {
         await navigator.share({
           title: `赛博祭祖 · ${displayTitle}`,
-          text: `我在赛博祭祖${displayTitle}祈福🙏\n${shareUrl}`,
+          text: `我在赛博祭祖 · ${displayTitle}祈福🙏\n${shareUrl}`,
         });
       }
     } catch (e: any) {
@@ -198,7 +198,7 @@ export default function ShareModal({ onClose, pageTitle }: ShareModalProps) {
       ctx.fillStyle = '#f4a825';
       ctx.font = 'bold 20px serif';
       ctx.textAlign = 'center';
-      ctx.fillText(`${displayTitle} · 赛博祭祖`, dst.width / 2, src.height + 24);
+      ctx.fillText(displayTitle, dst.width / 2, src.height + 24);
       const qrSize = Math.min(96, dst.width * 0.32);
       const qrX = dst.width / 2 - qrSize / 2;
       const qrY = src.height + 34;
@@ -346,7 +346,7 @@ export default function ShareModal({ onClose, pageTitle }: ShareModalProps) {
                 {copied ? '已复制' : '复制链接'}
               </button>
               <button
-                onClick={() => window.open(`https://service.weibo.com/share/share.php?url=${encodeURIComponent(shareUrl)}&title=${encodeURIComponent('我在赛博祭祖' + displayTitle + '祈福🙏')}`, '_blank')}
+                onClick={() => window.open(`https://service.weibo.com/share/share.php?url=${encodeURIComponent(shareUrl)}&title=${encodeURIComponent('我在赛博祭祖 · ' + displayTitle + '祈福🙏')}`, '_blank')}
                 className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-mono cursor-pointer transition-all"
                 style={{ background: 'rgba(230,22,45,0.12)', border: '1px solid rgba(230,22,45,0.3)', color: '#e6162d' }}
               >

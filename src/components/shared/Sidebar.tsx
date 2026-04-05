@@ -26,7 +26,7 @@ export default function Sidebar() {
 
   return (
     <nav
-      className="relative flex flex-col items-center py-4 sm:py-6 gap-2 sm:gap-3 h-full w-12 sm:w-16 flex-shrink-0"
+      className="relative flex flex-col items-center py-4 sm:py-6 gap-2 sm:gap-3 h-full w-10 sm:w-16 flex-shrink-0"
       style={{
         background: 'linear-gradient(180deg, rgba(10,10,15,0.98) 0%, rgba(17,17,24,0.95) 100%)',
         borderRight: '1px solid rgba(42,42,53,0.8)',
@@ -37,7 +37,7 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="mb-3 sm:mb-4 flex flex-col items-center gap-1">
         <div
-          className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-lg sm:text-xl"
+          className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-base sm:text-xl"
           style={{ background: 'rgba(230,57,70,0.15)', border: '1px solid rgba(230,57,70,0.4)' }}
         >
           ⛩️
@@ -54,7 +54,7 @@ export default function Sidebar() {
           <button
             key={item.id}
             onClick={() => handleNav(item.path)}
-            className="relative group w-9 h-9 sm:w-11 sm:h-11 flex flex-col items-center justify-center rounded-lg transition-all duration-200 cursor-pointer"
+            className="relative group w-8 h-8 sm:w-11 sm:h-11 flex flex-col items-center justify-center rounded-lg transition-all duration-200 cursor-pointer"
             style={{
               background: isActive ? 'rgba(230,57,70,0.15)' : 'transparent',
               border: isActive ? '1px solid rgba(230,57,70,0.5)' : '1px solid transparent',
@@ -94,7 +94,7 @@ export default function Sidebar() {
 
       {/* Stats at bottom */}
       <div className="mt-auto flex flex-col items-center gap-2">
-        <div className="w-8 h-px" style={{ background: 'linear-gradient(90deg, transparent, #2a2a35, transparent)' }} />
+        <div className="w-5 sm:w-8 h-px" style={{ background: 'linear-gradient(90deg, transparent, #2a2a35, transparent)' }} />
         <StatsDisplay />
       </div>
     </nav>
@@ -107,7 +107,7 @@ function StatsDisplay() {
 
   return (
     <div
-      className="relative px-2 py-3 rounded-lg text-center cursor-default"
+      className="relative px-1 py-2 rounded-lg text-center cursor-default"
       style={{
         background: 'rgba(26,26,37,0.6)',
         border: '1px solid #2a2a35',
@@ -115,8 +115,8 @@ function StatsDisplay() {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <div className="text-xs text-c-gold font-zhu" style={{ fontSize: '10px' }}>功德</div>
-      <div className="text-c-gold" style={{ fontSize: '12px', textShadow: '0 0 8px rgba(244,168,37,0.5)' }}>
+      <div className="text-c-gold font-zhu hidden sm:block" style={{ fontSize: '9px' }}>功德</div>
+      <div className="text-c-gold" style={{ fontSize: '11px', textShadow: '0 0 8px rgba(244,168,37,0.5)' }}>
         {(totalIncenseBurned + totalPaperBurned * 3)}
       </div>
       {hovered && (

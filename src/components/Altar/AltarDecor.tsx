@@ -169,7 +169,7 @@ export function RealisticOfferingTable({
   onPlace: (type: Offering['type']) => void;
   onRemove: (id: string) => void;
 }) {
-  const [hovered, setHovered] = useState<string | null>(null);
+  const [hovered, _setHovered] = useState<string | null>(null);
 
   const slots: {
     type: Offering['type'];
@@ -194,10 +194,9 @@ export function RealisticOfferingTable({
   ];
 
   return (
-    <div className="relative w-full" style={{ height: '180px', margin: '8px 0' }}>
+    <div className="relative w-full" style={{ height: '150px' }}>
       {slots.map(({ type, left, top, zIndex, scale, rotate }) => {
         const placed = placedOfferings.find((o) => o.type === type);
-        const label = OFFERING_LABELS[type];
         const isHovered = hovered === type;
 
         return (
@@ -213,17 +212,9 @@ export function RealisticOfferingTable({
               transition: 'transform 0.2s ease, filter 0.2s ease',
               filter: placed ? 'none' : 'grayscale(0.6) brightness(0.6)',
             }}
-            onMouseEnter={() => setHovered(type)}
-            onMouseLeave={() => setHovered(null)}
             onClick={() => placed ? onRemove(placed.id) : onPlace(type)}
           >
             <RealisticDish type={type} placed={!!placed} hovered={isHovered} />
-            <div
-              className="absolute left-1/2 -translate-x-1/2 mt-1 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10"
-              style={{ fontSize: '9px', color: placed ? '#f4a825' : '#7a7060' }}
-            >
-              {label.zh}
-            </div>
           </div>
         );
       })}
