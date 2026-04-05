@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { OFFERING_LABELS } from '@/data/demo';
-import type { Offering } from '@/types';
+import { OFFERING_LABELS, INCENSE_LABELS } from '@/data/demo';
+import type { Offering, LitIncense } from '@/types';
 
 // ============ 写实器皿 ============
 
@@ -169,7 +169,7 @@ export function RealisticOfferingTable({
   onPlace: (type: Offering['type']) => void;
   onRemove: (id: string) => void;
 }) {
-  const [hovered, _setHovered] = useState<string | null>(null);
+  const [hovered] = useState<string | null>(null);
 
   const slots: {
     type: Offering['type'];
@@ -268,24 +268,27 @@ export function Lantern({ side }: { side: 'left' | 'right' }) {
 
 // ============ 香烛燃芯 ============
 
-export function LitIncenseStick({ incense, now }: { incense: { duration: number; litAt: number }; now: number }) {
+export function LitIncenseStick({ incense, now }: { incense: LitIncense; now: number }) {
   const remaining = Math.max(0, incense.duration - (now - incense.litAt));
   const progress = remaining / incense.duration;
   const height = 24 + progress * 10;
+  const color = INCENSE_LABELS[incense.type]?.color ?? '#f4a825';
 
   return (
     <div className="relative flex flex-col items-center">
       <div className="absolute -top-3 w-2 h-3 rounded-t-full"
         style={{
-          background: 'radial-gradient(ellipse at bottom, #fff 0%, #f4a825 40%, #e63946 80%, transparent 100%)',
+          background: `radial-gradient(ellipse at bottom, #fff 0%, ${color} 40%, transparent 100%)`,
           animation: 'flame-flicker 0.3s ease-in-out infinite',
-          filter: 'blur(0.5px)',
+          filter: `blur(0.5px) drop-shadow(0 0 6px ${color})`,
         }}
       />
       <div className="w-1.5 rounded-t"
         style={{
           height: `${height}px`,
-          background: `linear-gradient(180deg, #4a3520 ${(1 - progress) * 100}%, #2a1a10 100%)`,
+          background: progress > 0.7
+            ? `linear-gradient(180deg, ${color}cc, #2a1a10)`
+            : `linear-gradient(180deg, #3a2515 ${(1 - progress) * 100}%, #2a1a10 100%)`,
         }}
       />
       {progress < 0.7 && (

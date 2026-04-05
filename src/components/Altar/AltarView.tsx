@@ -1,7 +1,26 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/store/useStore';
 import { RealisticOfferingTable, Lantern, LitIncenseStick } from './AltarDecor';
+import type { Ancestor } from '@/types';
+
+function playBellSound() {
+  try {
+    const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.value = 440;
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 2.5);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 2.5);
+  } catch {
+    // Audio not available — silent fallback
+  }
+}
 
 
 // ============ 主视图 ============
@@ -127,8 +146,8 @@ function AncestorTablet({
   ancestors,
   setActive,
 }: {
-  ancestor: any;
-  ancestors: any[];
+  ancestor: Ancestor;
+  ancestors: Ancestor[];
   setActive: (id: string | null) => void;
 }) {
   const [showSelector, setShowSelector] = useState(false);
@@ -272,10 +291,12 @@ function AncestorTablet({
 
 function IncenseHolder() {
   const { litIncense, extinguishIncense } = useStore();
-  const [now, setNow] = useState(Date.now());
+  const [now, setNow] = useState(() => Date.now());
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const smokeRef = useRef<{ x: number; y: number; vx: number; vy: number; life: number; size: number; opacity: number; hue: number }[]>([]);
 
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
+    const id = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(id);
   }, []);
 
@@ -287,10 +308,88 @@ function IncenseHolder() {
         extinguishIncense(inc.id);
       }
     });
-  }, [now, litIncense]);
+  }, [now, litIncense, extinguishIncense]);
+
+  // Smoke canvas animation
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const W = canvas.clientWidth;
+    const H = canvas.clientHeight;
+    canvas.width = W;
+    canvas.height = H;
+
+    let animId: number;
+    const render = () => {
+      ctx.clearRect(0, 0, W, H);
+
+      // Draw smoke from each stick's flame tip
+      litIncense.forEach((inc, idx) => {
+        const remaining = Math.max(0, inc.duration - (now - inc.litAt));
+        const progress = remaining / inc.duration;
+        const stickH = 24 + progress * 10;
+        const flameH = 12;
+        // holder: w-24 h-12, centered in area, stick holes: flex gap-1
+        const stickSpacing = 16;
+        const groupW = 3 * stickSpacing;
+        const startX = W / 2 - groupW / 2 + stickSpacing / 2;
+        const stickX = startX + idx * stickSpacing;
+        const holderTopY = H * 0.62; // holder top in canvas coords
+        const flameTipY = holderTopY - stickH - flameH;
+
+        if (Math.random() < 0.3) {
+          smokeRef.current.push({
+            x: stickX + (Math.random() - 0.5) * 6,
+            y: flameTipY,
+            vx: (Math.random() - 0.5) * 0.6,
+            vy: -0.5 - Math.random() * 0.5,
+            life: 1,
+            size: 4 + Math.random() * 6,
+            opacity: 0.5,
+            hue: inc.type === 'mugwort' ? 80 : inc.type === 'agarwood' ? 10 : 40,
+          });
+        }
+      });
+
+      smokeRef.current = smokeRef.current.filter((s) => {
+        s.x += s.vx;
+        s.y += s.vy;
+        s.size *= 1.01;
+        s.opacity *= 0.98;
+        s.life -= 0.008;
+        if (s.life <= 0) return false;
+        const grad = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.size);
+        grad.addColorStop(0, `hsla(${s.hue}, 40%, 60%, ${s.opacity * 0.7})`);
+        grad.addColorStop(1, `hsla(${s.hue}, 30%, 40%, 0)`);
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+        ctx.fillStyle = grad;
+        ctx.fill();
+        return true;
+      });
+
+      if (smokeRef.current.length > 80) {
+        smokeRef.current = smokeRef.current.slice(-80);
+      }
+
+      animId = requestAnimationFrame(render);
+    };
+
+    render();
+    return () => cancelAnimationFrame(animId);
+  }, [litIncense, now]);
 
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex flex-col items-center relative">
+      {/* Smoke canvas */}
+      <canvas
+        ref={canvasRef}
+        className="absolute pointer-events-none"
+        style={{ width: '96px', height: '80px', top: '-60px', left: '50%', transform: 'translateX(-50%)' }}
+      />
       {/* Holder base */}
       <div
         className="w-24 h-12 rounded-t-full flex items-end justify-center pb-2"
@@ -325,19 +424,14 @@ function IncenseHolder() {
 
 function Bell() {
   const { bellRinging, ringBell } = useStore();
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const handleRing = () => {
+  const handleRing = useCallback(() => {
     ringBell();
-    if (audioRef.current) {
-      audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(() => {});
-    }
-  };
+    playBellSound();
+  }, [ringBell]);
 
   return (
     <div className="flex flex-col items-center">
-      <audio ref={audioRef} src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH2JkI2Ff3hwaGpye4SHgnh0cXBwdHqAgHt3dHR3eX+ChIN/d3Z3eX2BhISBd3Z4e32BhYWFd3Z4e32Bg4SEd3Z4e36BhIWFd3Z4e36Bg4SEd3Z4e36Bg4SFd3Z4e36Bg4SEd3Z4e36Bg4SEd3Z4e36Bg4SEd3Z4e36Bg4SE" />
       {/* Bell body */}
       <motion.div
         animate={bellRinging ? { rotate: [-8, 6, -5, 4, -2, 0] } : {}}

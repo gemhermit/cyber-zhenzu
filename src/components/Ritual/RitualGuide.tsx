@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/store/useStore';
+import type { PaperOffering } from '@/types';
 
 // 叩首音效：用 Web Audio API 生成合成音
 function playKnockSound() {
   try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);
@@ -17,12 +18,14 @@ function playKnockSound() {
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.15);
-  } catch {}
+  } catch {
+    // Audio not available — silent fallback
+  }
 }
 
 function playBellSound() {
   try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
     const osc = ctx.createOscillator();
     const osc2 = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -39,12 +42,14 @@ function playBellSound() {
     osc2.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 2.5);
     osc2.stop(ctx.currentTime + 2.5);
-  } catch {}
+  } catch {
+    // Audio not available — silent fallback
+  }
 }
 
 function playSuccessChime() {
   try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
     [523.25, 659.25, 783.99].forEach((freq, i) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -59,7 +64,9 @@ function playSuccessChime() {
       osc.start(t);
       osc.stop(t + 0.8);
     });
-  } catch {}
+  } catch {
+    // Audio not available — silent fallback
+  }
 }
 
 const RITUAL_STEPS = [
@@ -196,7 +203,7 @@ export default function RitualGuide() {
   } = useStore();
 
   const [kowtowCount, setKowtowCount] = useState(0);
-  const [_bowCount, setBowCount] = useState(0);
+  const [, setBowCount] = useState(0);
   const [bowActive, setBowActive] = useState(false);
 
   // 姓氏自动提取（与家谱页面保持一致）
@@ -228,6 +235,7 @@ export default function RitualGuide() {
 
   // 重置状态当步骤变化时
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setStepCompleted(false);
     setBowCount(0);
     setBowActive(false);
@@ -368,7 +376,7 @@ export default function RitualGuide() {
       if (!stepCompleted) {
         ['gold_ingot', 'silver_ingot', 'spirit_money'].forEach((type, i) => {
           setTimeout(() => {
-            addPaperOffering(type as any);
+            addPaperOffering(type as PaperOffering['type']);
             setPaperBurning(true);
             const id = `ritual-paper-${Date.now()}-${i}`;
             // burn after a short delay
@@ -728,6 +736,7 @@ function BellAnimation({ rang }: { rang: number }) {
 
   useEffect(() => {
     if (rang > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSwinging(true);
       const t = setTimeout(() => setSwinging(false), 1000);
       return () => clearTimeout(t);

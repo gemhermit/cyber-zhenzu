@@ -99,15 +99,10 @@ export default function PrayersView() {
         return true;
       });
 
-      if (lanterns.current.length > 0) {
-        animId = requestAnimationFrame(render);
-      }
+      animId = requestAnimationFrame(render);
     };
 
-    if (lanterns.current.length > 0) {
-      render();
-    }
-
+    animId = requestAnimationFrame(render);
     return () => cancelAnimationFrame(animId);
   }, [prayers]);
 
@@ -242,6 +237,7 @@ function PrayerCard({
   onLight: () => void;
   onRemove: () => void;
 }) {
+  // eslint-disable-next-line react-hooks/purity
   const timeAgo = Math.floor((Date.now() - prayer.timestamp) / 60000);
   const glyph = LANTERN_GLYPHS[prayer.timestamp % LANTERN_GLYPHS.length];
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/store/useStore';
 import { OFFERING_LABELS } from '@/data/demo';
@@ -13,12 +13,12 @@ export default function OfferingsView() {
   const { placedOfferings, placeOffering, removeOffering } = useStore();
   const [flashId, setFlashId] = useState<string | null>(null);
 
-  const handlePlace = (type: Offering['type']) => {
+  const handlePlace = useCallback((type: Offering['type']) => {
     const id = `offering-${Date.now()}-${Math.random()}`;
     placeOffering({ id, type, placedAt: Date.now() });
     setFlashId(id);
     setTimeout(() => setFlashId(null), 500);
-  };
+  }, [placeOffering]);
 
   return (
     <div className="relative flex flex-col items-center px-3 sm:px-4 py-4 gap-6">

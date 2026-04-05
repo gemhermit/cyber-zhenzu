@@ -93,18 +93,34 @@ function parseCSV(text: string): Partial<Ancestor>[] {
 }
 
 // JSON 解析
+interface ImportAncestor {
+  name?: string;
+  姓名?: string;
+  birthYear?: string;
+  生年?: string;
+  deathYear?: string;
+  卒年?: string;
+  generation?: string;
+  代数?: string;
+  type?: string;
+  relationship?: string;
+  关系?: string;
+  bio?: string;
+  简介?: string;
+}
+
 function parseJSON(text: string): Partial<Ancestor>[] {
   try {
     const data = JSON.parse(text);
-    const arr = Array.isArray(data) ? data : data.ancestors || data.members || [];
-    return arr.map((item: any) => ({
+    const arr: ImportAncestor[] = Array.isArray(data) ? data : data.ancestors || data.members || [];
+    return arr.map((item) => ({
       name: normalizeName(item.name || item.姓名 || ''),
-      birthYear: item.birthYear || item.生年 ? parseInt(item.birthYear || item.生年) : undefined,
-      deathYear: item.deathYear || item.卒年 ? parseInt(item.deathYear || item.卒年) : undefined,
+      birthYear: item.birthYear || item.生年 ? parseInt(item.birthYear || item.生年 || '0') : undefined,
+      deathYear: item.deathYear || item.卒年 ? parseInt(item.deathYear || item.卒年 || '0') : undefined,
       generation: normalizeGen(item.generation || item.代数 || item.type || 'kǎo'),
       relationship: item.relationship || item.关系 || undefined,
       bio: item.bio || item.简介 || undefined,
-    })).filter((a: any) => a.name);
+    })).filter((a: Partial<Ancestor>) => a.name);
   } catch {
     return [];
   }
@@ -173,8 +189,8 @@ export default function FamilyTreeView() {
         valid: !!item.name,
         error: item.name ? undefined : '姓名为空',
       } as ImportPreview)));
-    } catch (e: any) {
-      setImportError(`解析失败: ${e.message}`);
+    } catch (e: unknown) {
+      setImportError(`解析失败: ${e instanceof Error ? e.message : String(e)}`);
     }
   };
 

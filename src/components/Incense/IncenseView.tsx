@@ -6,20 +6,19 @@ const BURN_DURATION = 60000;
 
 export default function IncenseView() {
   return (
-    <div className="relative flex flex-col items-center px-3 sm:px-4 py-4 gap-6">
+    <div className="relative flex flex-col items-center px-3 sm:px-4 py-4 gap-6" data-page-capture>
       <div className="text-center mb-2">
         <h1 className="font-zhu text-3xl sm:text-4xl text-c-gold text-glow-gold mb-1">香火缭绕</h1>
         <p className="text-c-muted text-[10px] sm:text-xs font-mono">SELECT AND LIGHT VIRTUAL INCENSE</p>
       </div>
 
-      {/* Mobile: stack vertically; desktop: side by side */}
-      <div className="flex flex-col sm:flex-row gap-6 items-center sm:items-start w-full max-w-3xl">
+      <div className="flex flex-col lg:flex-row gap-6 items-center lg:items-start w-full max-w-5xl">
 
         {/* Incense selector */}
         <IncenseSelector />
 
         {/* Burner + stats */}
-        <div className="flex flex-col items-center gap-4 w-full sm:w-auto">
+        <div className="flex flex-col items-center gap-4 w-full">
           <IncenseBurnerDisplay />
           <IncenseStats />
         </div>
@@ -36,8 +35,8 @@ function IncenseSelector() {
 
   return (
     <div
-      className="rounded-xl p-4 w-full sm:min-w-0"
-      style={{ background: 'rgba(17,17,24,0.8)', border: '1px solid #2a2a35', maxWidth: '360px', width: '100%' }}
+      className="rounded-xl p-4 w-full"
+      style={{ background: 'rgba(17,17,24,0.8)', border: '1px solid #2a2a35', maxWidth: '360px' }}
     >
       <h3 className="font-zhu text-c-text text-sm mb-3 text-center" style={{ letterSpacing: '0.1em' }}>
         选择香品
@@ -100,12 +99,13 @@ function IncenseSelector() {
 
 function IncenseBurnerDisplay() {
   const { litIncense, extinguishIncense } = useStore();
-  const [now, setNow] = useState(Date.now());
+  const [now, setNow] = useState(() => Date.now());
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const smokeRef = useRef<{ x: number; y: number; vx: number; vy: number; life: number; size: number; opacity: number }[]>([]);
+  // Store stick world positions so smoke can match them
+  const stickPositionsRef = useRef<{ x: number; y: number }[]>([]);
 
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 100);
+    const id = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(id);
   }, []);
 
@@ -118,34 +118,70 @@ function IncenseBurnerDisplay() {
     });
   }, [now, litIncense, extinguishIncense]);
 
+  // Compute flame tip positions — must match CSS layout exactly
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const W = canvas.clientWidth;
+    const H = canvas.clientHeight;
+
+    // CSS layout:
+    //   holder: bottom:20% + height:13% → top = H*(1-0.20-0.13) = H*0.67
+    //   sticks: bottom:20% (same as holder bottom), flex-col items-end → sit at holder top
+    //   flame: at top of stick column (flex-col, no justify)
+    //   smoke: at flame tip = holderTop - flameH
+    const holderBottomPct = 0.20;
+    const holderHeightPct = 0.13;
+    const stickBaseY = H * (1 - holderBottomPct - holderHeightPct); // = H*0.62
+    const flameH = 20; // flame element height (h-5)
+
+    // Centering: same formula as CSS left: calc(50% + startX - 7px)
+    // maxWidth 560px, element width ~28px, container uses left: calc(50% + N px)
+    const count = litIncense.length;
+    const spacing = 28;
+    const totalW = count * spacing;
+    // Center the group: first stick at W/2 + offset, spacing between sticks
+    // CSS: left: calc(50% + (50 - totalW/2 + spacing/2 - 7px))
+    // Canvas: startX from W/2
+    const startX = W / 2 - totalW / 2 + spacing / 2;
+
+    stickPositionsRef.current = litIncense.map((inc, idx) => {
+      const remaining = Math.max(0, inc.duration - (now - inc.litAt));
+      const progress = remaining / inc.duration;
+      const stickH = 50 + progress * 20;
+      return {
+        x: startX + idx * spacing,
+        y: stickBaseY - stickH - flameH, // smoke at flame tip
+      };
+    });
+  }, [litIncense, now]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Responsive canvas size
-    const containerW = canvas.parentElement?.clientWidth || 300;
-    const scale = Math.min(1, containerW / 300);
-    canvas.width = Math.floor(300 * scale);
-    canvas.height = Math.floor(250 * scale);
-
     let animId: number;
-    const render = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      litIncense.forEach((_, idx) => {
-        const baseX = canvas.width * 0.3 + idx * canvas.width * 0.13;
-        const baseY = canvas.height * 0.32;
-        if (Math.random() < 0.3) {
+    const render = () => {
+      const W = canvas.width;
+      const H = canvas.height;
+
+      ctx.clearRect(0, 0, W, H);
+
+      // Draw smoke from actual stick positions
+      stickPositionsRef.current.forEach((pos) => {
+        if (Math.random() < 0.4) {
           smokeRef.current.push({
-            x: baseX + (Math.random() - 0.5) * 8,
-            y: baseY,
-            vx: (Math.random() - 0.5) * 0.5,
-            vy: -0.5 - Math.random() * 0.5,
+            x: pos.x + (Math.random() - 0.5) * 10,
+            y: pos.y - 20, // start just above the stick tip
+            vx: (Math.random() - 0.5) * 0.8,
+            vy: -0.6 - Math.random() * 0.6,
             life: 1,
-            size: 4 + Math.random() * 6,
-            opacity: 0.5,
+            size: 5 + Math.random() * 10,
+            opacity: 0.55,
           });
         }
       });
@@ -153,9 +189,9 @@ function IncenseBurnerDisplay() {
       smokeRef.current = smokeRef.current.filter((s) => {
         s.x += s.vx;
         s.y += s.vy;
-        s.size *= 1.01;
-        s.opacity *= 0.98;
-        s.life -= 0.008;
+        s.size *= 1.012;
+        s.opacity *= 0.978;
+        s.life -= 0.007;
         if (s.life <= 0) return false;
         const grad = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.size);
         grad.addColorStop(0, `rgba(180,160,140,${s.opacity})`);
@@ -167,8 +203,8 @@ function IncenseBurnerDisplay() {
         return true;
       });
 
-      if (smokeRef.current.length > 120) {
-        smokeRef.current = smokeRef.current.slice(-120);
+      if (smokeRef.current.length > 300) {
+        smokeRef.current = smokeRef.current.slice(-300);
       }
 
       animId = requestAnimationFrame(render);
@@ -176,63 +212,95 @@ function IncenseBurnerDisplay() {
 
     render();
     return () => cancelAnimationFrame(animId);
-  }, [litIncense.length]);
+  }, [litIncense]);
+
+  // Canvas resize
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const observer = new ResizeObserver(() => {
+      if (canvas) {
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+      }
+    });
+    observer.observe(canvas);
+    return () => observer.disconnect();
+  }, []);
+
+  const holderBottom = '20%';
 
   return (
     <div className="flex flex-col items-center w-full">
       <div
-        className="relative w-full rounded-lg overflow-hidden"
+        className="relative w-full rounded-xl overflow-hidden"
         style={{
-          maxWidth: '340px',
-          aspectRatio: '300 / 250',
-          background: 'radial-gradient(ellipse at bottom, #1a1510 0%, #0a0a0f 80%)',
-          border: '1px solid #2a2a35',
+          maxWidth: '560px',
+          aspectRatio: '4 / 3',
+          background: 'radial-gradient(ellipse at 50% 100%, #1e1410 0%, #0a0a0f 65%)',
+          border: '1px solid rgba(244,168,37,0.15)',
+          boxShadow: '0 0 60px rgba(230,57,70,0.1), inset 0 0 80px rgba(0,0,0,0.6)',
         }}
       >
         <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />
 
+        {/* Bottom glow */}
         <div
-          className="absolute bottom-0 left-1/2 -translate-x-1/2 w-2/5 h-2/5 rounded-t-full"
-          style={{ background: 'radial-gradient(ellipse, rgba(230,57,70,0.2) 0%, transparent 70%)' }}
+          className="absolute left-1/2 -translate-x-1/2"
+          style={{
+            bottom: 0,
+            width: '60%',
+            height: '40%',
+            background: 'radial-gradient(ellipse at 50% 100%, rgba(230,57,70,0.2) 0%, transparent 70%)',
+          }}
         />
 
+        {/* Incense holder */}
         <div
-          className="absolute bottom-[22%] left-1/2 -translate-x-1/2 w-2/5 h-3 rounded-t-full flex items-end justify-center pb-1 gap-1"
-          style={{ background: 'linear-gradient(180deg, #2a2a35, #1a1a25)', border: '1px solid #3a3a45' }}
-        >
-          {litIncense.length === 0 && (
-            <span className="text-c-muted text-[10px] font-mono">空</span>
-          )}
-        </div>
+          className="absolute left-1/2 -translate-x-1/2 flex items-end justify-center pb-2 gap-1 rounded-t-full"
+          style={{
+            bottom: holderBottom,
+            width: '50%',
+            height: '13%',
+            background: 'linear-gradient(180deg, #3a3a45, #1a1a25)',
+            border: '1px solid #4a4a55',
+          }}
+        />
 
+        {/* Incense sticks + flames */}
         {litIncense.map((inc, idx) => {
           const remaining = Math.max(0, inc.duration - (now - inc.litAt));
           const progress = remaining / inc.duration;
           const color = INCENSE_LABELS[inc.type].color;
-          const stickH = (40 + progress * 20) * 0.8;
-          const spacing = litIncense.length > 1 ? 20 : 0;
-          const offset = litIncense.length > 1 ? -(litIncense.length - 1) * spacing / 2 : 0;
+          const stickH = 50 + progress * 20;
+          const count = litIncense.length;
+          const spacing = 28;
+          const totalW = count * spacing;
+          // Center group: each stick at 50% - totalW/2 + idx*spacing
+          const groupLeft = -totalW / 2;
 
           return (
             <div
               key={inc.id}
               className="absolute flex flex-col items-center"
               style={{
-                bottom: `calc(22% + 6%)`,
-                left: `calc(50% + ${offset + idx * spacing}px - 6px)`,
+                bottom: holderBottom,
+                left: `calc(50% + ${groupLeft + idx * spacing}px)`,
+                transform: 'translateY(-100%)',
               }}
             >
+              {/* Flame */}
               <div
-                className="w-2.5 h-3.5 rounded-t-full relative"
+                className="w-3 h-5 rounded-t-full"
                 style={{
-                  background: `radial-gradient(ellipse at bottom, #fff 0%, ${color} 50%, transparent 100%)`,
+                  background: `radial-gradient(ellipse at 50% 100%, #fff 0%, ${color} 45%, transparent 100%)`,
                   animation: 'flame-flicker 0.25s ease-in-out infinite',
-                  filter: `drop-shadow(0 0 8px ${color})`,
-                  marginBottom: '-3px',
+                  filter: `drop-shadow(0 0 14px ${color}) drop-shadow(0 0 5px rgba(255,255,255,0.6))`,
                 }}
               />
+              {/* Stick */}
               <div
-                className="w-1 rounded-t"
+                className="w-1.5 rounded-t"
                 style={{
                   height: `${stickH}px`,
                   background: progress > 0.7
@@ -243,22 +311,32 @@ function IncenseBurnerDisplay() {
             </div>
           );
         })}
+
+        {/* Decorative corner marks */}
+        <div className="absolute top-2 left-3 text-c-gold opacity-20 font-mono text-[9px]">CYBER ZHEN ZU</div>
+        <div className="absolute top-2 right-3 text-c-muted opacity-30 font-mono text-[9px]">
+          {litIncense.length > 0 ? `${litIncense.length}炷` : ''}
+        </div>
       </div>
 
-      <div className="mt-2 text-c-muted text-xs font-mono text-center">
-        {litIncense.length} 炷香燃中
-        {litIncense.length > 0 && ` · ${Math.ceil((now - litIncense[0].litAt) / 1000)}秒`}
+      <div className="mt-3 text-c-muted text-xs font-mono text-center">
+        {litIncense.length > 0
+          ? `${litIncense.length} 炷香燃中 · 已燃 ${Math.ceil((now - litIncense[0].litAt) / 1000)} 秒`
+          : '选择香品，点燃香火'}
       </div>
     </div>
   );
 }
 
+// Shared smoke state — module-level so it persists across renders
+const smokeRef = { current: [] as { x: number; y: number; vx: number; vy: number; life: number; size: number; opacity: number }[] };
+
 function IncenseStats() {
   const { totalIncenseBurned } = useStore();
   return (
     <div
-      className="px-4 py-3 rounded-xl text-center w-full max-w-[340px]"
-      style={{ background: 'rgba(17,17,24,0.8)', border: '1px solid #2a2a35' }}
+      className="px-6 py-4 rounded-xl text-center"
+      style={{ background: 'rgba(17,17,24,0.8)', border: '1px solid #2a2a35', maxWidth: '560px', width: '100%' }}
     >
       <div className="text-c-gold font-zhu text-sm mb-1">功德累计</div>
       <div className="text-3xl font-mono text-c-text" style={{ textShadow: '0 0 15px rgba(244,168,37,0.5)' }}>

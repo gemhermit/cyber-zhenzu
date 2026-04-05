@@ -18,6 +18,39 @@ const PAPER_EMOJIS: Record<PaperOffering['type'], string> = {
 
 const BURN_DURATION = 2800; // ms per item
 
+class FireParticle {
+  x: number; y: number; vx: number; vy: number;
+  life: number; maxLife: number; size: number;
+  hue: number;
+  constructor(w: number, h: number, cx: number) {
+    this.x = cx + (Math.random() - 0.5) * w * 0.3;
+    this.y = h;
+    this.vx = (Math.random() - 0.5) * 2;
+    this.vy = -2 - Math.random() * 3;
+    this.life = 1;
+    this.maxLife = 0.5 + Math.random() * 0.5;
+    this.size = 8 + Math.random() * 16;
+    this.hue = 20 + Math.random() * 30;
+  }
+  update() {
+    this.x += this.vx;
+    this.y += this.vy;
+    this.vy *= 0.99;
+    this.life -= 0.02 / this.maxLife;
+  }
+  draw(c: CanvasRenderingContext2D) {
+    if (this.life <= 0) return;
+    const grad = c.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size * this.life);
+    grad.addColorStop(0, `hsla(${this.hue}, 100%, 70%, ${this.life * 0.8})`);
+    grad.addColorStop(0.5, `hsla(${this.hue - 10}, 100%, 50%, ${this.life * 0.4})`);
+    grad.addColorStop(1, `hsla(${this.hue - 20}, 100%, 30%, 0)`);
+    c.beginPath();
+    c.arc(this.x, this.y, this.size * this.life, 0, Math.PI * 2);
+    c.fillStyle = grad;
+    c.fill();
+  }
+}
+
 export default function PaperOfferingsView() {
   const { paperOfferings, addPaperOffering, burnPaperOffering, completePaperBurn } = useStore();
   const [showFire, setShowFire] = useState(false);
@@ -40,40 +73,7 @@ export default function PaperOfferingsView() {
     updateSize();
 
     let animId: number;
-    const particles: FireParticle[] = [];
-
-    class FireParticle {
-      x: number; y: number; vx: number; vy: number;
-      life: number; maxLife: number; size: number;
-      hue: number;
-      constructor(w: number, h: number, cx: number) {
-        this.x = cx + (Math.random() - 0.5) * w * 0.3;
-        this.y = h;
-        this.vx = (Math.random() - 0.5) * 2;
-        this.vy = -2 - Math.random() * 3;
-        this.life = 1;
-        this.maxLife = 0.5 + Math.random() * 0.5;
-        this.size = 8 + Math.random() * 16;
-        this.hue = 20 + Math.random() * 30;
-      }
-      update() {
-        this.x += this.vx;
-        this.y += this.vy;
-        this.vy *= 0.99;
-        this.life -= 0.02 / this.maxLife;
-      }
-      draw(c: CanvasRenderingContext2D) {
-        if (this.life <= 0) return;
-        const grad = c.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size * this.life);
-        grad.addColorStop(0, `hsla(${this.hue}, 100%, 70%, ${this.life * 0.8})`);
-        grad.addColorStop(0.5, `hsla(${this.hue - 10}, 100%, 50%, ${this.life * 0.4})`);
-        grad.addColorStop(1, `hsla(${this.hue - 20}, 100%, 30%, 0)`);
-        c.beginPath();
-        c.arc(this.x, this.y, this.size * this.life, 0, Math.PI * 2);
-        c.fillStyle = grad;
-        c.fill();
-      }
-    }
+    let particles: FireParticle[] = [];
 
     const burningCount = paperOfferings.filter((p) => p.burning).length;
 
@@ -102,8 +102,11 @@ export default function PaperOfferingsView() {
         }
       }
 
-      particles.forEach((p) => { p.update(); p.draw(ctx); });
-      particles.push(...particles.splice(0, particles.length).filter((p) => p.life > 0));
+      for (let i = 0; i < particles.length; i++) {
+        particles[i].update();
+      }
+      particles = particles.filter((p) => p.life > 0);
+      particles.forEach((p) => p.draw(ctx));
 
       if (particles.length > 0 || (showFire && burningCount > 0)) {
         animId = requestAnimationFrame(render);

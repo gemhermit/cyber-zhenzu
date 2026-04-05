@@ -29,6 +29,7 @@ export function ShareProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useShare() {
   const ctx = useContext(ShareContext);
   if (!ctx) throw new Error('useShare must be used inside ShareProvider');

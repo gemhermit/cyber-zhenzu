@@ -49,7 +49,7 @@ const ROUTE_TO_SECTION: Record<string, string> = {
   '/ritual': 'ritual',
 };
 
-const SECTION_COMPONENTS: Record<string, React.LazyExoticComponent<React.ComponentType<{}>>> = {
+const SECTION_COMPONENTS: Record<string, React.LazyExoticComponent<React.ComponentType<object>>> = {
   altar: AltarView,
   incense: IncenseView,
   offerings: OfferingsView,

@@ -141,6 +141,13 @@ export default function ShareModal({ onClose, pageTitle }: ShareModalProps) {
     link.click();
   }, [previewSrc, displayTitle]);
 
+  const handleCopyLink = useCallback(() => {
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, [shareUrl]);
+
   const handleNativeShare = useCallback(async () => {
     if (!previewSrc) return;
     try {
@@ -159,17 +166,10 @@ export default function ShareModal({ onClose, pageTitle }: ShareModalProps) {
           text: `我在赛博祭祖 · ${displayTitle}祈福🙏\n${shareUrl}`,
         });
       }
-    } catch (e: any) {
-      if (e.name !== 'AbortError') handleCopyLink();
+    } catch (e: unknown) {
+      if ((e as Error)?.name !== 'AbortError') handleCopyLink();
     }
-  }, [previewSrc, displayTitle, shareUrl]);
-
-  const handleCopyLink = useCallback(() => {
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  }, [shareUrl]);
+  }, [previewSrc, displayTitle, shareUrl, handleCopyLink]);
 
   const retryCapture = useCallback(async () => {
     setLoading(true);
