@@ -1,20 +1,28 @@
-import React from 'react';
-import { useStore } from '../../store/useStore';
-import type { NavSection } from '../../types';
+import { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useStore } from '@/store/useStore';
+import type { NavSection } from '@/types';
 
-const NAV_ITEMS: { id: NavSection; label: string; icon: string }[] = [
-  { id: 'altar', label: '祭坛', icon: '⛩️' },
-  { id: 'incense', label: '香火', icon: '🔥' },
-  { id: 'offerings', label: '供品', icon: '🍎' },
-  { id: 'paper', label: '元宝', icon: '💰' },
-  { id: 'family', label: '家谱', icon: '🌳' },
-  { id: 'memorial', label: '祭日', icon: '📅' },
-  { id: 'prayers', label: '祈福', icon: '🎋' },
-  { id: 'ritual', label: '祭祀', icon: '✨' },
+const NAV_ITEMS: { id: NavSection; label: string; icon: string; path: string }[] = [
+  { id: 'altar', label: '祭坛', icon: '⛩️', path: '/altar' },
+  { id: 'incense', label: '香火', icon: '🔥', path: '/incense' },
+  { id: 'offerings', label: '供品', icon: '🍎', path: '/offerings' },
+  { id: 'paper', label: '元宝', icon: '💰', path: '/paper' },
+  { id: 'family', label: '家谱', icon: '🌳', path: '/family' },
+  { id: 'memorial', label: '祭日', icon: '📅', path: '/memorial' },
+  { id: 'prayers', label: '祈福', icon: '🎋', path: '/prayers' },
+  { id: 'ritual', label: '祭祀', icon: '✨', path: '/ritual' },
 ];
 
 export default function Sidebar() {
-  const { activeSection, setActiveSection } = useStore();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const activeSection = NAV_ITEMS.find(item => item.path === location.pathname)?.id;
+
+  const handleNav = (path: string) => {
+    navigate(path);
+  };
 
   return (
     <nav
@@ -45,7 +53,7 @@ export default function Sidebar() {
         return (
           <button
             key={item.id}
-            onClick={() => setActiveSection(item.id)}
+            onClick={() => handleNav(item.path)}
             className="relative group w-11 h-11 flex flex-col items-center justify-center rounded-lg transition-all duration-200 cursor-pointer"
             style={{
               background: isActive ? 'rgba(230,57,70,0.15)' : 'transparent',
@@ -95,7 +103,7 @@ export default function Sidebar() {
 
 function StatsDisplay() {
   const { totalIncenseBurned, totalPaperBurned } = useStore();
-  const [hovered, setHovered] = React.useState(false);
+  const [hovered, setHovered] = useState(false);
 
   return (
     <div

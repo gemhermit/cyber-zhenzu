@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useStore } from './store/useStore';
 import Sidebar from './components/shared/Sidebar';
@@ -22,45 +24,68 @@ const SECTION_TITLES: Record<string, string> = {
   ritual: '祭祀',
 };
 
+const ROUTE_TO_SECTION: Record<string, string> = {
+  '/altar': 'altar',
+  '/incense': 'incense',
+  '/offerings': 'offerings',
+  '/paper': 'paper',
+  '/family': 'family',
+  '/memorial': 'memorial',
+  '/prayers': 'prayers',
+  '/ritual': 'ritual',
+};
+
+const SECTION_COMPONENTS: Record<string, React.ReactNode> = {
+  altar: <AltarView />,
+  incense: <IncenseView />,
+  offerings: <OfferingsView />,
+  paper: <PaperOfferingsView />,
+  family: <FamilyTreeView />,
+  memorial: <MemorialDaysView />,
+  prayers: <PrayersView />,
+  ritual: <RitualGuide />,
+};
+
 const viewVariants = {
   initial: { opacity: 0, y: 16 },
   animate: { opacity: 1, y: 0, transition: { duration: 0.25, ease: 'easeOut' as const } },
   exit: { opacity: 0, y: -8, transition: { duration: 0.15 } },
 };
 
-function SectionRouter() {
-  const { activeSection } = useStore();
+function PageContent() {
+  const location = useLocation();
+  const section = ROUTE_TO_SECTION[location.pathname] || 'altar';
 
   return (
     <div className="flex-1 overflow-y-auto" style={{ scrollBehavior: 'smooth' }}>
       <AnimatePresence mode="wait">
         <motion.div
-          key={activeSection}
+          key={location.pathname}
           variants={viewVariants}
           initial="initial"
           animate="animate"
           exit="exit"
         >
-          {activeSection === 'altar' && <AltarView />}
-          {activeSection === 'incense' && <IncenseView />}
-          {activeSection === 'offerings' && <OfferingsView />}
-          {activeSection === 'paper' && <PaperOfferingsView />}
-          {activeSection === 'family' && <FamilyTreeView />}
-          {activeSection === 'memorial' && <MemorialDaysView />}
-          {activeSection === 'prayers' && <PrayersView />}
-          {activeSection === 'ritual' && <RitualGuide />}
+          {SECTION_COMPONENTS[section]}
         </motion.div>
       </AnimatePresence>
     </div>
   );
 }
 
-function App() {
+export default function App() {
+  const { setActiveSection } = useStore();
+
+  // 同步 URL → store
+  useEffect(() => {
+    const section = ROUTE_TO_SECTION[window.location.pathname];
+    if (section && section !== useStore.getState().activeSection) {
+      setActiveSection(section as any);
+    }
+  }, []);
+
   return (
-    <div
-      className="relative flex"
-      style={{ height: '100vh', background: '#0a0a0f', overflow: 'hidden' }}
-    >
+    <div className="relative flex" style={{ height: '100vh', background: '#0a0a0f', overflow: 'hidden' }}>
       {/* Ambient background */}
       <div
         className="fixed inset-0 pointer-events-none"
@@ -79,7 +104,7 @@ function App() {
       {/* Sidebar */}
       <Sidebar />
 
-      {/* Main — fills remaining width and full height */}
+      {/* Main */}
       <main className="relative flex flex-col flex-1" style={{ zIndex: 1, minWidth: 0 }}>
         {/* Header */}
         <header
@@ -108,21 +133,20 @@ function App() {
           </div>
         </header>
 
-        {/* Page content — scrollable */}
-        <SectionRouter />
+        {/* Page content */}
+        <PageContent />
       </main>
     </div>
   );
 }
 
 function CurrentSectionTitle() {
-  const { activeSection } = useStore();
-  const title = SECTION_TITLES[activeSection] || '';
+  const location = useLocation();
+  const section = ROUTE_TO_SECTION[location.pathname] || 'altar';
+  const title = SECTION_TITLES[section] || '';
   return (
     <span className="font-zhu text-sm" style={{ color: '#f0ece3', letterSpacing: '0.1em' }}>
       {title}
     </span>
   );
 }
-
-export default App;

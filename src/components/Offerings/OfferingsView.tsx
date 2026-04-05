@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useStore } from '../../store/useStore';
-import { OFFERING_LABELS } from '../../data/demo';
-import type { Offering } from '../../types';
+import { useStore } from '@/store/useStore';
+import { OFFERING_LABELS } from '@/data/demo';
+import type { Offering } from '@/types';
 
-const ALL_OFFERING_TYPES: Offering['type'][] = ['fruit', 'tea', 'wine', 'sweet', 'flower', 'zongzi'];
+const ALL_OFFERING_TYPES: Offering['type'][] = ['fruit','tangerine','tea','wine','sweet','tangyuan','rice','chicken','zongzi','flower','candy','cigarette'];
 
 export default function OfferingsView() {
   const { placedOfferings, placeOffering, removeOffering } = useStore();

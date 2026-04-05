@@ -11,7 +11,7 @@ export interface Ancestor {
 
 export interface Offering {
   id: string;
-  type: 'fruit' | 'tea' | 'wine' | 'sweet' | 'flower' | 'zongzi';
+  type: 'fruit' | 'tea' | 'wine' | 'sweet' | 'flower' | 'zongzi' | 'tangyuan' | 'chicken' | 'rice' | 'candy' | 'tangerine' | 'cigarette';
   placedAt?: number;
 }
 

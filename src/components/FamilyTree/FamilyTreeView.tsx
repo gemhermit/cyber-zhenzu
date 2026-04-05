@@ -1,7 +1,7 @@
 import { useState, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useStore } from '../../store/useStore';
-import type { Ancestor } from '../../types';
+import { useStore } from '@/store/useStore';
+import type { Ancestor } from '@/types';
 
 const GEN_LABELS = {
   zǔ: { zh: '祖', color: '#e63946', desc: '祖辈（曾祖父及以上）' },

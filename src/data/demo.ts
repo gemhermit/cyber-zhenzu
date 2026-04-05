@@ -50,12 +50,18 @@ export const DEMO_MEMORIAL_DAYS: MemorialDay[] = [
 ];
 
 export const OFFERING_LABELS: Record<string, { zh: string; en: string; emoji: string }> = {
-  fruit: { zh: '水果', en: 'Fruit', emoji: '🍎' },
-  tea: { zh: '清茶', en: 'Tea', emoji: '🍵' },
-  wine: { zh: '清酒', en: 'Wine', emoji: '🍶' },
-  sweet: { zh: '糕点', en: 'Sweets', emoji: '🍡' },
-  flower: { zh: '鲜花', en: 'Flowers', emoji: '🌸' },
-  zongzi: { zh: '粽子', en: 'Zongzi', emoji: '🍙' },
+  fruit:    { zh: '水果',    en: 'Fruit',    emoji: '🍎' },
+  tangerine:{ zh: '柑橘',    en: 'Citrus',   emoji: '🍊' },
+  tea:      { zh: '清茶',    en: 'Tea',      emoji: '🍵' },
+  wine:     { zh: '清酒',    en: 'Wine',     emoji: '🍶' },
+  sweet:    { zh: '糕点',    en: 'Sweets',   emoji: '🍡' },
+  tangyuan: { zh: '汤圆',    en: 'Tangyuan', emoji: '🥣' },
+  rice:     { zh: '米饭',    en: 'Rice',     emoji: '🍚' },
+  chicken:  { zh: '烧鸡',    en: 'Roast Chicken', emoji: '🍗' },
+  zongzi:   { zh: '粽子',    en: 'Zongzi',   emoji: '🍙' },
+  flower:   { zh: '鲜花',    en: 'Flowers',  emoji: '🌸' },
+  candy:    { zh: '糖果',    en: 'Candy',    emoji: '🍬' },
+  cigarette:{ zh: '香烟',    en: 'Cigarette', emoji: '🚬' },
 };
 
 export const INCENSE_LABELS: Record<string, { zh: string; en: string; color: string }> = {

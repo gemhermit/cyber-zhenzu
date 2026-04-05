@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useStore } from '../../store/useStore';
+import { useStore } from '@/store/useStore';
 
 function getDaysUntil(dateStr: string): number {
   const [month, day] = dateStr.split('-').map(Number);

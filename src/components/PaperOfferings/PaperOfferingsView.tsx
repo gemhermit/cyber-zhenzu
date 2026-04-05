@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useStore } from '../../store/useStore';
-import { PAPER_OFFERING_LABELS } from '../../data/demo';
-import type { PaperOffering } from '../../types';
+import { useStore } from '@/store/useStore';
+import { PAPER_OFFERING_LABELS } from '@/data/demo';
+import type { PaperOffering } from '@/types';
 
 const PAPER_TYPES: PaperOffering['type'][] = [
   'gold_ingot', 'silver_ingot', 'spirit_money', 'spirit_clothes', 'spirit_house',

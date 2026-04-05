@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { useStore } from '../../store/useStore';
-import { INCENSE_LABELS } from '../../data/demo';
+import { useStore } from '@/store/useStore';
+import { INCENSE_LABELS } from '@/data/demo';
 
 const BURN_DURATION = 60000; // 60 seconds
 

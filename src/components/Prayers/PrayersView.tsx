@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useStore } from '../../store/useStore';
-import type { Prayer } from '../../types';
+import { useStore } from '@/store/useStore';
+import type { Prayer } from '@/types';
 
 const LANTERN_GLYPHS = ['福', '禄', '寿', '喜', '祥', '和', '安', '宁', '善', '德'];
 
