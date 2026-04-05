@@ -107,7 +107,7 @@ function SeoHelmet() {
   const title = SECTION_TITLES[section] || '';
   const description = SECTION_DESCRIPTIONS[section] || '';
   const fullTitle = `赛博祭祖 · ${title}`;
-  const canonicalUrl = `http://yunbai.bago.top${location.pathname}`;
+  const canonicalUrl = `https://yunbai.bago.top${location.pathname}`;
 
   return (
     <Helmet>

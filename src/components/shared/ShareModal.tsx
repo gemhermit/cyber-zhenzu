@@ -4,7 +4,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import html2canvas from 'html2canvas';
 import { useStore } from '@/store/useStore';
 
-const BASE_URL = 'http://yunbai.bago.top/';
+const BASE_URL = 'https://yunbai.bago.top/';
 
 const PAGE_ROUTES: Record<string, string> = {
   '/altar': '祭坛',
@@ -66,20 +66,23 @@ export default function ShareModal({ onClose, pageTitle }: ShareModalProps) {
       }
 
       try {
+        // Use 2x scale for retina/high-DPI clarity
+        const scale = typeof window !== 'undefined' ? Math.min(window.devicePixelRatio || 1, 3) : 2;
         const src = await html2canvas(altarEl, {
           backgroundColor: '#0a0a0f',
-          scale: 1,
+          scale,
           useCORS: true,
           logging: false,
         });
 
         if (cancelled) return;
 
-        const footerH = 130;
+        const footerH = Math.floor(src.height * 0.18);
         const dst = document.createElement('canvas');
         dst.width = src.width;
         dst.height = src.height + footerH;
         const ctx = dst.getContext('2d')!;
+        ctx.scale(1, 1);
 
         ctx.drawImage(src, 0, 0);
 
@@ -103,7 +106,7 @@ export default function ShareModal({ onClose, pageTitle }: ShareModalProps) {
         // QR
         const qrSize = Math.min(96, dst.width * 0.32);
         const qrX = dst.width / 2 - qrSize / 2;
-        const qrY = src.height + 34;
+        const qrY = src.height + 20;
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(qrX, qrY, qrSize, qrSize);
 
@@ -117,9 +120,18 @@ export default function ShareModal({ onClose, pageTitle }: ShareModalProps) {
         ctx.drawImage(qc, qrX, qrY, qrSize, qrSize);
 
         ctx.fillStyle = '#00e5ff';
-        ctx.font = '11px monospace';
+        ctx.font = `12px monospace`;
         ctx.textAlign = 'center';
-        ctx.fillText(shareUrl, dst.width / 2, qrY + qrSize + 14);
+        ctx.fillText(shareUrl, dst.width / 2, qrY + qrSize + 18);
+
+        // Stats line
+        const statsY = qrY + qrSize + 40;
+        ctx.font = `11px monospace`;
+        ctx.fillStyle = '#7a7570';
+        ctx.textAlign = 'left';
+        ctx.fillText(`🔥 ${totalIncenseBurned}  💰 ${totalPaperBurned}`, 20, statsY);
+        ctx.textAlign = 'right';
+        ctx.fillText('赛博祭祖 · cyber-zhenzu', dst.width - 20, statsY);
 
         if (!cancelled) setPreviewSrc(dst.toDataURL('image/png'));
       } catch {
@@ -182,8 +194,10 @@ export default function ShareModal({ onClose, pageTitle }: ShareModalProps) {
       }
       if (!altarEl) throw new Error('未找到页面内容');
 
-      const src = await html2canvas(altarEl, { backgroundColor: '#0a0a0f', scale: 1, useCORS: true, logging: false });
-      const footerH = 130;
+      const scale = typeof window !== 'undefined' ? Math.min(window.devicePixelRatio || 1, 3) : 2;
+      const src = await html2canvas(altarEl, { backgroundColor: '#0a0a0f', scale, useCORS: true, logging: false });
+
+      const footerH = Math.floor(src.height * 0.18);
       const dst = document.createElement('canvas');
       dst.width = src.width;
       dst.height = src.height + footerH;
@@ -191,34 +205,47 @@ export default function ShareModal({ onClose, pageTitle }: ShareModalProps) {
       ctx.drawImage(src, 0, 0);
       ctx.fillStyle = '#0a0a0f';
       ctx.fillRect(0, src.height, dst.width, footerH);
+
       const g = ctx.createLinearGradient(0, src.height, dst.width, src.height);
       g.addColorStop(0, 'transparent'); g.addColorStop(0.5, '#f4a825'); g.addColorStop(1, 'transparent');
       ctx.fillStyle = g;
       ctx.fillRect(0, src.height, dst.width, 2);
+
       ctx.fillStyle = '#f4a825';
-      ctx.font = 'bold 20px serif';
+      ctx.font = `bold ${Math.max(16, Math.min(dst.width * 0.05, 22))}px serif`;
       ctx.textAlign = 'center';
       ctx.fillText(displayTitle, dst.width / 2, src.height + 24);
+
       const qrSize = Math.min(96, dst.width * 0.32);
       const qrX = dst.width / 2 - qrSize / 2;
-      const qrY = src.height + 34;
+      const qrY = src.height + 20;
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(qrX, qrY, qrSize, qrSize);
       const QRCode = (await import('qrcode')).default;
       const qc = document.createElement('canvas');
       await QRCode.toCanvas(qc, shareUrl, { width: qrSize, margin: 1, color: { dark: '#0a0a0f', light: '#ffffff' } });
       ctx.drawImage(qc, qrX, qrY, qrSize, qrSize);
+
       ctx.fillStyle = '#00e5ff';
-      ctx.font = '11px monospace';
+      ctx.font = '12px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(shareUrl, dst.width / 2, qrY + qrSize + 14);
+      ctx.fillText(shareUrl, dst.width / 2, qrY + qrSize + 18);
+
+      const statsY = qrY + qrSize + 40;
+      ctx.font = '11px monospace';
+      ctx.fillStyle = '#7a7570';
+      ctx.textAlign = 'left';
+      ctx.fillText(`🔥 ${totalIncenseBurned}  💰 ${totalPaperBurned}`, 20, statsY);
+      ctx.textAlign = 'right';
+      ctx.fillText('赛博祭祖 · cyber-zhenzu', dst.width - 20, statsY);
+
       setPreviewSrc(dst.toDataURL('image/png'));
     } catch {
       // keep loading true to show retry
     } finally {
       setLoading(false);
     }
-  }, [displayTitle, shareUrl]);
+  }, [displayTitle, shareUrl, totalIncenseBurned, totalPaperBurned]);
 
   return (
     <AnimatePresence>

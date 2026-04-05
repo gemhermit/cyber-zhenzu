@@ -1,7 +1,7 @@
 User-agent: *
 Allow: /
 
-Sitemap: http://yunbai.bago.top/sitemap.xml
+Sitemap: https://yunbai.bago.top/sitemap.xml
 
 # Crawl-delay for polite bots
 Crawl-delay: 1
