@@ -1,17 +1,18 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useStore } from './store/useStore';
 import Sidebar from './components/shared/Sidebar';
 import ParticleBackground from './components/shared/ParticleBackground';
-import AltarView from './components/Altar/AltarView';
-import IncenseView from './components/Incense/IncenseView';
-import OfferingsView from './components/Offerings/OfferingsView';
-import PaperOfferingsView from './components/PaperOfferings/PaperOfferingsView';
-import FamilyTreeView from './components/FamilyTree/FamilyTreeView';
-import MemorialDaysView from './components/MemorialDays/MemorialDaysView';
-import PrayersView from './components/Prayers/PrayersView';
-import RitualGuide from './components/Ritual/RitualGuide';
+import ShareModal from './components/shared/ShareModal';
+
+const AltarView = lazy(() => import('./components/Altar/AltarView'));
+const IncenseView = lazy(() => import('./components/Incense/IncenseView'));
+const OfferingsView = lazy(() => import('./components/Offerings/OfferingsView'));
+const PaperOfferingsView = lazy(() => import('./components/PaperOfferings/PaperOfferingsView'));
+const FamilyTreeView = lazy(() => import('./components/FamilyTree/FamilyTreeView'));
+const MemorialDaysView = lazy(() => import('./components/MemorialDays/MemorialDaysView'));
+const PrayersView = lazy(() => import('./components/Prayers/PrayersView'));
+const RitualGuide = lazy(() => import('./components/Ritual/RitualGuide'));
 
 const SECTION_TITLES: Record<string, string> = {
   altar: '祭坛',
@@ -35,15 +36,15 @@ const ROUTE_TO_SECTION: Record<string, string> = {
   '/ritual': 'ritual',
 };
 
-const SECTION_COMPONENTS: Record<string, React.ReactNode> = {
-  altar: <AltarView />,
-  incense: <IncenseView />,
-  offerings: <OfferingsView />,
-  paper: <PaperOfferingsView />,
-  family: <FamilyTreeView />,
-  memorial: <MemorialDaysView />,
-  prayers: <PrayersView />,
-  ritual: <RitualGuide />,
+const SECTION_COMPONENTS: Record<string, React.LazyExoticComponent<React.ComponentType<{}>>> = {
+  altar: AltarView,
+  incense: IncenseView,
+  offerings: OfferingsView,
+  paper: PaperOfferingsView,
+  family: FamilyTreeView,
+  memorial: MemorialDaysView,
+  prayers: PrayersView,
+  ritual: RitualGuide,
 };
 
 const viewVariants = {
@@ -52,9 +53,21 @@ const viewVariants = {
   exit: { opacity: 0, y: -8, transition: { duration: 0.15 } },
 };
 
+function PageFallback() {
+  return (
+    <div className="flex items-center justify-center h-full" style={{ minHeight: '400px' }}>
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-6 h-6 rounded-full border-2 border-c-gold border-t-transparent animate-spin" />
+        <span className="text-c-muted text-xs font-mono">加载中...</span>
+      </div>
+    </div>
+  );
+}
+
 function PageContent() {
   const location = useLocation();
   const section = ROUTE_TO_SECTION[location.pathname] || 'altar';
+  const Component = SECTION_COMPONENTS[section];
 
   return (
     <div className="flex-1 overflow-y-auto" style={{ scrollBehavior: 'smooth' }}>
@@ -66,7 +79,9 @@ function PageContent() {
           animate="animate"
           exit="exit"
         >
-          {SECTION_COMPONENTS[section]}
+          <Suspense fallback={<PageFallback />}>
+            <Component />
+          </Suspense>
         </motion.div>
       </AnimatePresence>
     </div>
@@ -74,16 +89,7 @@ function PageContent() {
 }
 
 export default function App() {
-  const { setActiveSection } = useStore();
-
-  // 同步 URL → store
-  useEffect(() => {
-    const section = ROUTE_TO_SECTION[window.location.pathname];
-    if (section && section !== useStore.getState().activeSection) {
-      setActiveSection(section as any);
-    }
-  }, []);
-
+  const [showShare, setShowShare] = useState(false);
   return (
     <div className="relative flex" style={{ height: '100vh', background: '#0a0a0f', overflow: 'hidden' }}>
       {/* Ambient background */}
@@ -123,6 +129,30 @@ export default function App() {
             <CurrentSectionTitle />
           </div>
           <div className="flex items-center gap-3">
+            {/* Share button */}
+            <button
+              onClick={() => setShowShare(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-mono transition-all duration-200 cursor-pointer"
+              style={{
+                background: 'rgba(0,229,255,0.08)',
+                border: '1px solid rgba(0,229,255,0.25)',
+                color: '#00e5ff',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.background = 'rgba(0,229,255,0.15)';
+                (e.currentTarget as HTMLElement).style.boxShadow = '0 0 12px rgba(0,229,255,0.2)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.background = 'rgba(0,229,255,0.08)';
+                (e.currentTarget as HTMLElement).style.boxShadow = 'none';
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+              </svg>
+              分享
+            </button>
             <div
               className="px-3 py-1 rounded text-xs font-mono"
               style={{ background: 'rgba(230,57,70,0.1)', border: '1px solid rgba(230,57,70,0.2)', color: '#e63946' }}
@@ -136,6 +166,11 @@ export default function App() {
         {/* Page content */}
         <PageContent />
       </main>
+
+      {/* Share Modal */}
+      <AnimatePresence>
+        {showShare && <ShareModal onClose={() => setShowShare(false)} />}
+      </AnimatePresence>
     </div>
   );
 }

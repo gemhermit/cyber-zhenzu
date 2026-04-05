@@ -217,10 +217,28 @@ interface RitualState {
 - **State**: Zustand
 - **Storage**: localStorage (all data persisted)
 - **Fonts**: Google Fonts (ZCOOL XiaoWei, Space Mono)
+- **Sharing**: html2canvas (screenshot capture), qrcode (canvas QR generation), qrcode.react (inline SVG QR), native Web Share API
 
 ---
 
-## 7. Acceptance Criteria
+## 7. Sharing & Social裂变
+
+### ShareModal
+- Header "分享祭坛" button in the app header bar (cyan styled, right side)
+- Opens a centered modal with animated entrance
+- **Preview area**: auto-captures the altar DOM (`data-altar-capture`) via html2canvas on mount
+- **QR Code section**: displays QRCodeSVG encoding `http://yunbai.bago.top/` with app stats
+- **Social buttons**: WeChat (clipboard), Weibo (weibo share), QQ (QQ share), Download image
+- **Copy link**: clipboard copy of share URL with confirmation feedback
+- **Download**: composites altar screenshot + footer with app branding, QR code (via `qrcode` canvas API), and URL onto a single PNG file for download
+
+### Share URL
+- Primary: `http://yunbai.bago.top/`
+- All QR codes and sharing links point to this URL
+
+---
+
+## 8. Acceptance Criteria
 
 1. **Altar renders** with at least one demo ancestor, proper layout, and atmospheric styling
 2. **Incense can be lit**, burns with animated smoke, and countdown works
@@ -233,3 +251,4 @@ interface RitualState {
 9. **All data persists** in localStorage across page reloads
 10. **Responsive** works on desktop (primary) and tablet
 11. **No console errors** on load or interaction
+12. **Share modal** opens from header button, captures altar screenshot, shows QR code for `http://yunbai.bago.top/`, supports download as PNG with QR and URL embedded

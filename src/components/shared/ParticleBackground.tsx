@@ -67,12 +67,20 @@ export default function ParticleBackground() {
     resize();
     window.addEventListener('resize', resize);
 
+    let visible = true;
+    const handleVisibility = () => {
+      visible = document.visibilityState === 'visible';
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
     const render = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      particles.forEach((p) => {
-        p.update(canvas);
-        p.draw(ctx);
-      });
+      if (visible) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach((p) => {
+          p.update(canvas);
+          p.draw(ctx);
+        });
+      }
       animId = requestAnimationFrame(render);
     };
 
@@ -81,6 +89,7 @@ export default function ParticleBackground() {
     return () => {
       cancelAnimationFrame(animId);
       window.removeEventListener('resize', resize);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, []);
 
