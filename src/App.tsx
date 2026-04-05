@@ -1,9 +1,11 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense } from 'react';
 import { useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Helmet } from 'react-helmet-async';
 import Sidebar from './components/shared/Sidebar';
 import ParticleBackground from './components/shared/ParticleBackground';
 import ShareModal from './components/shared/ShareModal';
+import { ShareProvider, useShare } from './contexts/ShareContext';
 
 const AltarView = lazy(() => import('./components/Altar/AltarView'));
 const IncenseView = lazy(() => import('./components/Incense/IncenseView'));
@@ -23,6 +25,17 @@ const SECTION_TITLES: Record<string, string> = {
   memorial: '祭日',
   prayers: '祈福',
   ritual: '祭祀',
+};
+
+const SECTION_DESCRIPTIONS: Record<string, string> = {
+  altar: '在赛博祭坛前为已故亲人点燃电子香烛，表达敬意与思念。',
+  incense: '点燃电子香火，让袅袅青烟传递对先人的怀念。',
+  offerings: '献上精心准备的供品，表达对逝者的孝心与感恩。',
+  paper: '焚烧电子纸钱与金元宝，延续传统祭祀仪式。',
+  family: '浏览与编辑家族谱系，记录家族历史与传承。',
+  memorial: '记录与管理重要祭日与纪念日，永不忘却。',
+  prayers: '在先人灵前诉说心愿与祈福，寄托思念。',
+  ritual: '了解传统祭祀仪式的步骤与礼仪，庄重祭祖。',
 };
 
 const ROUTE_TO_SECTION: Record<string, string> = {
@@ -88,10 +101,35 @@ function PageContent() {
   );
 }
 
-export default function App() {
-  const [showShare, setShowShare] = useState(false);
+function SeoHelmet() {
+  const location = useLocation();
+  const section = ROUTE_TO_SECTION[location.pathname] || 'altar';
+  const title = SECTION_TITLES[section] || '';
+  const description = SECTION_DESCRIPTIONS[section] || '';
+  const fullTitle = `赛博祭祖 · ${title}`;
+  const canonicalUrl = `http://yunbai.bago.top${location.pathname}`;
+
   return (
-    <div className="relative flex" style={{ height: '100vh', background: '#0a0a0f', overflow: 'hidden' }}>
+    <Helmet>
+      <title>{fullTitle}</title>
+      <meta name="description" content={description} />
+      <link rel="canonical" href={canonicalUrl} />
+      <meta property="og:title" content={fullTitle} />
+      <meta property="og:description" content={description} />
+      <meta property="og:url" content={canonicalUrl} />
+      <meta name="twitter:title" content={fullTitle} />
+      <meta name="twitter:description" content={description} />
+    </Helmet>
+  );
+}
+
+function AppInner() {
+  const { openShare, isOpen, pageTitle, closeShare } = useShare();
+
+  return (
+    <>
+      <SeoHelmet />
+      <div className="relative flex" style={{ height: '100dvh', background: '#0a0a0f', overflow: 'hidden' }}>
       {/* Ambient background */}
       <div
         className="fixed inset-0 pointer-events-none"
@@ -114,47 +152,40 @@ export default function App() {
       <main className="relative flex flex-col flex-1" style={{ zIndex: 1, minWidth: 0 }}>
         {/* Header */}
         <header
-          className="flex-shrink-0 flex items-center justify-between px-6"
+          className="flex-shrink-0 flex items-center justify-between px-3 sm:px-6"
           style={{
-            height: '48px',
+            height: '44px',
             background: 'rgba(10,10,15,0.95)',
             borderBottom: '1px solid rgba(42,42,53,0.6)',
             backdropFilter: 'blur(10px)',
             flexShrink: 0,
           }}
         >
-          <div className="flex items-center gap-3">
-            <span className="text-c-muted text-xs font-mono">CYBER ZHEN ZU</span>
-            <span className="text-c-border">|</span>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <span className="text-c-muted text-[10px] sm:text-xs font-mono hidden sm:block">CYBER ZHEN ZU</span>
+            <span className="text-c-border hidden sm:block">|</span>
             <CurrentSectionTitle />
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             {/* Share button */}
             <button
-              onClick={() => setShowShare(true)}
+              onClick={() => openShare()}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-mono transition-all duration-200 cursor-pointer"
               style={{
                 background: 'rgba(0,229,255,0.08)',
                 border: '1px solid rgba(0,229,255,0.25)',
                 color: '#00e5ff',
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.background = 'rgba(0,229,255,0.15)';
-                (e.currentTarget as HTMLElement).style.boxShadow = '0 0 12px rgba(0,229,255,0.2)';
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.background = 'rgba(0,229,255,0.08)';
-                (e.currentTarget as HTMLElement).style.boxShadow = 'none';
+                minHeight: '32px',
               }}
             >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
                 <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
               </svg>
-              分享
+              <span className="hidden sm:inline">分享</span>
             </button>
             <div
-              className="px-3 py-1 rounded text-xs font-mono"
+              className="px-2 sm:px-3 py-1 rounded text-[10px] sm:text-xs font-mono hidden sm:block"
               style={{ background: 'rgba(230,57,70,0.1)', border: '1px solid rgba(230,57,70,0.2)', color: '#e63946' }}
             >
               <span className="text-[9px] opacity-60 mr-1">●</span>
@@ -169,9 +200,18 @@ export default function App() {
 
       {/* Share Modal */}
       <AnimatePresence>
-        {showShare && <ShareModal onClose={() => setShowShare(false)} />}
+        {isOpen && <ShareModal onClose={closeShare} pageTitle={pageTitle} />}
       </AnimatePresence>
     </div>
+    </>
+  );
+}
+
+export default function App() {
+  return (
+    <ShareProvider>
+      <AppInner />
+    </ShareProvider>
   );
 }
 

@@ -112,7 +112,7 @@ export default function PrayersView() {
   }, [prayers]);
 
   return (
-    <div className="relative flex flex-col items-center px-4">
+    <div className="relative flex flex-col items-center px-3 sm:px-4 py-4 gap-4" data-page-capture>
       <div className="text-center mb-8">
         <h1 className="font-zhu text-4xl text-c-gold text-glow-gold mb-2">祈福牌</h1>
         <p className="text-c-muted text-xs font-mono">WRITE PRAYERS FOR YOUR ANCESTORS</p>

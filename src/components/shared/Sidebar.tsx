@@ -26,7 +26,7 @@ export default function Sidebar() {
 
   return (
     <nav
-      className="relative flex flex-col items-center py-6 gap-3 h-full w-16 flex-shrink-0"
+      className="relative flex flex-col items-center py-4 sm:py-6 gap-2 sm:gap-3 h-full w-12 sm:w-16 flex-shrink-0"
       style={{
         background: 'linear-gradient(180deg, rgba(10,10,15,0.98) 0%, rgba(17,17,24,0.95) 100%)',
         borderRight: '1px solid rgba(42,42,53,0.8)',
@@ -35,17 +35,17 @@ export default function Sidebar() {
       }}
     >
       {/* Logo */}
-      <div className="mb-4 flex flex-col items-center gap-1">
+      <div className="mb-3 sm:mb-4 flex flex-col items-center gap-1">
         <div
-          className="w-10 h-10 rounded-full flex items-center justify-center text-xl"
+          className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-lg sm:text-xl"
           style={{ background: 'rgba(230,57,70,0.15)', border: '1px solid rgba(230,57,70,0.4)' }}
         >
           ⛩️
         </div>
-        <span className="text-[8px] font-zhu text-c-muted leading-none">赛博</span>
+        <span className="text-[7px] sm:text-[8px] font-zhu text-c-muted leading-none hidden sm:block">赛博</span>
       </div>
 
-      <div className="w-8 h-px" style={{ background: 'linear-gradient(90deg, transparent, #2a2a35, transparent)' }} />
+      <div className="w-6 sm:w-8 h-px" style={{ background: 'linear-gradient(90deg, transparent, #2a2a35, transparent)' }} />
 
       {/* Nav items */}
       {NAV_ITEMS.map((item) => {
@@ -54,16 +54,16 @@ export default function Sidebar() {
           <button
             key={item.id}
             onClick={() => handleNav(item.path)}
-            className="relative group w-11 h-11 flex flex-col items-center justify-center rounded-lg transition-all duration-200 cursor-pointer"
+            className="relative group w-9 h-9 sm:w-11 sm:h-11 flex flex-col items-center justify-center rounded-lg transition-all duration-200 cursor-pointer"
             style={{
               background: isActive ? 'rgba(230,57,70,0.15)' : 'transparent',
               border: isActive ? '1px solid rgba(230,57,70,0.5)' : '1px solid transparent',
               boxShadow: isActive ? '0 0 15px rgba(230,57,70,0.2)' : 'none',
             }}
           >
-            <span className="text-lg leading-none">{item.icon}</span>
+            <span className="text-base sm:text-lg leading-none">{item.icon}</span>
             <span
-              className="text-[8px] mt-0.5 leading-none transition-colors"
+              className="text-[7px] sm:text-[8px] mt-0.5 leading-none transition-colors hidden sm:block"
               style={{ color: isActive ? '#e63946' : '#7a7570', fontFamily: 'ZCOOL XiaoWei, serif' }}
             >
               {item.label}

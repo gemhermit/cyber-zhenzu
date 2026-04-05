@@ -440,7 +440,7 @@ export default function RitualGuide() {
   }
 
   return (
-    <div className="relative flex flex-col items-center px-4">
+    <div className="relative flex flex-col items-center px-3 sm:px-4 py-4 gap-4" data-page-capture>
       <div className="text-center mb-6">
         <h1 className="font-zhu text-3xl text-c-gold text-glow-gold mb-1">祭祀大典</h1>
         <p className="text-c-muted text-xs font-mono">GUIDED RITUAL SEQUENCE</p>

@@ -29,6 +29,7 @@ interface AppState {
   paperOfferings: PaperOffering[];
   addPaperOffering: (type: PaperOffering['type']) => void;
   burnPaperOffering: (id: string) => void;
+  completePaperBurn: (id: string) => void;
   removePaperOffering: (id: string) => void;
   clearBurnedPaper: () => void;
 
@@ -117,11 +118,18 @@ export const useStore = create<AppState>()(
         set((st) => {
           return {
             paperOfferings: st.paperOfferings.map((p) =>
-              p.id === id ? { ...p, burning: true, burnedAt: Date.now() } : p
+              p.id === id ? { ...p, burning: true } : p
             ),
-            totalPaperBurned: st.totalPaperBurned + 1,
           };
         });
+      },
+      completePaperBurn: (id) => {
+        set((st) => ({
+          paperOfferings: st.paperOfferings.map((p) =>
+            p.id === id ? { ...p, burning: false, burnedAt: Date.now() } : p
+          ),
+          totalPaperBurned: st.totalPaperBurned + 1,
+        }));
       },
       removePaperOffering: (id) => set((st) => ({
         paperOfferings: st.paperOfferings.filter((p) => p.id !== id),

@@ -4,37 +4,64 @@ import { QRCodeSVG } from 'qrcode.react';
 import html2canvas from 'html2canvas';
 import { useStore } from '@/store/useStore';
 
-const SHARE_URL = 'http://yunbai.bago.top/';
+const BASE_URL = 'http://yunbai.bago.top/';
+
+const PAGE_ROUTES: Record<string, string> = {
+  '/altar': '祭坛',
+  '/incense': '香火',
+  '/offerings': '供品',
+  '/paper': '元宝',
+  '/family': '家谱',
+  '/memorial': '祭日',
+  '/prayers': '祈福',
+  '/ritual': '祭祀',
+};
 
 interface ShareModalProps {
   onClose: () => void;
+  /** Override the page title shown in the modal */
+  pageTitle?: string;
 }
 
-export default function ShareModal({ onClose }: ShareModalProps) {
-  const { ancestors, activeAncestorId, totalIncenseBurned, totalPaperBurned } = useStore();
-  const activeAncestor = ancestors.find((a) => a.id === activeAncestorId) || ancestors[0];
+export default function ShareModal({ onClose, pageTitle }: ShareModalProps) {
+  const { totalIncenseBurned, totalPaperBurned } = useStore();
 
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [canShare, setCanShare] = useState(false);
 
-  // Check native share support
+  // Detect current route from window location
+  const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/altar';
+  const displayTitle = pageTitle || PAGE_ROUTES[currentPath] || '赛博祭祖';
+  const shareUrl = `${BASE_URL}${currentPath === '/' || currentPath === '/altar' ? '' : currentPath}`;
+
   useEffect(() => {
     setCanShare(typeof navigator !== 'undefined' && !!navigator.share);
   }, []);
 
-  // Build composite preview: altar + footer with QR
+  // Capture current page content
   useEffect(() => {
     let cancelled = false;
 
     const doCapture = async () => {
       await new Promise((r) => setTimeout(r, 150));
 
-      const altarEl = document.querySelector('[data-altar-capture]') as HTMLElement | null;
+      // Try page-specific capture first, fall back to altar capture
+      const selectors = [
+        '[data-page-capture]',
+        '[data-altar-capture]',
+        'main [class*="flex-col"]',
+      ];
+
+      let altarEl: HTMLElement | null = null;
+      for (const sel of selectors) {
+        altarEl = document.querySelector(sel) as HTMLElement | null;
+        if (altarEl) break;
+      }
+
       if (!altarEl || cancelled) {
-        if (!cancelled) { setError('祭坛元素未找到'); setLoading(false); }
+        if (!cancelled) setPreviewSrc(null);
         return;
       }
 
@@ -48,21 +75,18 @@ export default function ShareModal({ onClose }: ShareModalProps) {
 
         if (cancelled) return;
 
-        // Build composite: altar + footer
-        const footerH = 140;
+        const footerH = 130;
         const dst = document.createElement('canvas');
         dst.width = src.width;
         dst.height = src.height + footerH;
         const ctx = dst.getContext('2d')!;
 
-        // Draw altar
         ctx.drawImage(src, 0, 0);
 
-        // Footer background
+        // Footer
         ctx.fillStyle = '#0a0a0f';
         ctx.fillRect(0, src.height, dst.width, footerH);
 
-        // Gold gradient line
         const g = ctx.createLinearGradient(0, src.height, dst.width, src.height);
         g.addColorStop(0, 'transparent');
         g.addColorStop(0.5, '#f4a825');
@@ -70,85 +94,96 @@ export default function ShareModal({ onClose }: ShareModalProps) {
         ctx.fillStyle = g;
         ctx.fillRect(0, src.height, dst.width, 2);
 
-        // App name
+        // Title
         ctx.fillStyle = '#f4a825';
-        ctx.font = 'bold 20px serif';
+        ctx.font = `bold ${Math.max(16, Math.min(dst.width * 0.05, 22))}px serif`;
         ctx.textAlign = 'center';
-        ctx.fillText('赛博祭祖 · Cyber Zhen Zu', dst.width / 2, src.height + 26);
+        ctx.fillText(`${displayTitle} · 赛博祭祖`, dst.width / 2, src.height + 24);
 
-        // QR code
-        const QRCode = (await import('qrcode')).default;
-        const qrSize = Math.min(100, src.width * 0.35);
+        // QR
+        const qrSize = Math.min(96, dst.width * 0.32);
         const qrX = dst.width / 2 - qrSize / 2;
-        const qrY = src.height + 36;
+        const qrY = src.height + 34;
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(qrX, qrY, qrSize, qrSize);
+
+        const QRCode = (await import('qrcode')).default;
         const qc = document.createElement('canvas');
-        await QRCode.toCanvas(qc, SHARE_URL, { width: qrSize, margin: 1, color: { dark: '#0a0a0f', light: '#ffffff' } });
+        await QRCode.toCanvas(qc, shareUrl, {
+          width: qrSize,
+          margin: 1,
+          color: { dark: '#0a0a0f', light: '#ffffff' },
+        });
         ctx.drawImage(qc, qrX, qrY, qrSize, qrSize);
 
-        // URL label
         ctx.fillStyle = '#00e5ff';
         ctx.font = '11px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText(SHARE_URL, dst.width / 2, qrY + qrSize + 14);
+        ctx.fillText(shareUrl, dst.width / 2, qrY + qrSize + 14);
 
-        if (!cancelled) {
-          setPreviewSrc(dst.toDataURL('image/png'));
-          setLoading(false);
-        }
-      } catch (e: any) {
-        if (!cancelled) { setError(e?.message || '截图失败'); setLoading(false); }
+        if (!cancelled) setPreviewSrc(dst.toDataURL('image/png'));
+      } catch {
+        if (!cancelled) setPreviewSrc(null);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     };
 
     doCapture();
     return () => { cancelled = true; };
-  }, []);
+  }, [displayTitle, shareUrl]);
 
-  const handleDownload = useCallback(async () => {
-    // The previewSrc IS the full composite image
+  const handleDownload = useCallback(() => {
     if (!previewSrc) return;
     const link = document.createElement('a');
-    link.download = `赛博祭祖-${activeAncestor?.name || '祭坛'}.png`;
+    link.download = `赛博祭祖-${displayTitle}.png`;
     link.href = previewSrc;
     link.click();
-  }, [previewSrc, activeAncestor]);
+  }, [previewSrc, displayTitle]);
 
   const handleNativeShare = useCallback(async () => {
     if (!previewSrc) return;
     try {
-      // Convert data URL to blob
       const res = await fetch(previewSrc);
       const blob = await res.blob();
-      const file = new File([blob], `赛博祭祖-${activeAncestor?.name || '祭坛'}.png`, { type: 'image/png' });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: '赛博祭祖', text: `我在赛博祭祖为 ${activeAncestor?.name || '先祖'} 上香祈福 🙏\n${SHARE_URL}` });
+      const file = new File([blob], `赛博祭祖-${displayTitle}.png`, { type: 'image/png' });
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: `赛博祭祖 · ${displayTitle}`,
+          text: `我在赛博祭祖${displayTitle}祈福🙏\n${shareUrl}`,
+        });
       } else {
-        // Fallback: share text
-        await navigator.share({ title: '赛博祭祖', text: `我在赛博祭祖为 ${activeAncestor?.name || '先祖'} 上香祈福 🙏\n${SHARE_URL}` });
+        await navigator.share({
+          title: `赛博祭祖 · ${displayTitle}`,
+          text: `我在赛博祭祖${displayTitle}祈福🙏\n${shareUrl}`,
+        });
       }
     } catch (e: any) {
       if (e.name !== 'AbortError') handleCopyLink();
     }
-  }, [previewSrc, activeAncestor]);
+  }, [previewSrc, displayTitle, shareUrl]);
 
   const handleCopyLink = useCallback(() => {
-    navigator.clipboard.writeText(SHARE_URL).then(() => {
+    navigator.clipboard.writeText(shareUrl).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
-  }, []);
+  }, [shareUrl]);
 
   const retryCapture = useCallback(async () => {
     setLoading(true);
-    setError(null);
     try {
-      const altarEl = document.querySelector('[data-altar-capture]') as HTMLElement | null;
-      if (!altarEl) throw new Error('祭坛元素未找到');
-      const src = await html2canvas(altarEl, { backgroundColor: '#0a0a0f', scale: 1, useCORS: true, logging: false });
+      const selectors = ['[data-page-capture]', '[data-altar-capture]'];
+      let altarEl: HTMLElement | null = null;
+      for (const sel of selectors) {
+        altarEl = document.querySelector(sel) as HTMLElement | null;
+        if (altarEl) break;
+      }
+      if (!altarEl) throw new Error('未找到页面内容');
 
-      const footerH = 140;
+      const src = await html2canvas(altarEl, { backgroundColor: '#0a0a0f', scale: 1, useCORS: true, logging: false });
+      const footerH = 130;
       const dst = document.createElement('canvas');
       dst.width = src.width;
       dst.height = src.height + footerH;
@@ -163,28 +198,27 @@ export default function ShareModal({ onClose }: ShareModalProps) {
       ctx.fillStyle = '#f4a825';
       ctx.font = 'bold 20px serif';
       ctx.textAlign = 'center';
-      ctx.fillText('赛博祭祖 · Cyber Zhen Zu', dst.width / 2, src.height + 26);
-      const QRCode = (await import('qrcode')).default;
-      const qrSize = Math.min(100, src.width * 0.35);
+      ctx.fillText(`${displayTitle} · 赛博祭祖`, dst.width / 2, src.height + 24);
+      const qrSize = Math.min(96, dst.width * 0.32);
       const qrX = dst.width / 2 - qrSize / 2;
-      const qrY = src.height + 36;
+      const qrY = src.height + 34;
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(qrX, qrY, qrSize, qrSize);
+      const QRCode = (await import('qrcode')).default;
       const qc = document.createElement('canvas');
-      await QRCode.toCanvas(qc, SHARE_URL, { width: qrSize, margin: 1, color: { dark: '#0a0a0f', light: '#ffffff' } });
+      await QRCode.toCanvas(qc, shareUrl, { width: qrSize, margin: 1, color: { dark: '#0a0a0f', light: '#ffffff' } });
       ctx.drawImage(qc, qrX, qrY, qrSize, qrSize);
       ctx.fillStyle = '#00e5ff';
       ctx.font = '11px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(SHARE_URL, dst.width / 2, qrY + qrSize + 14);
-
+      ctx.fillText(shareUrl, dst.width / 2, qrY + qrSize + 14);
       setPreviewSrc(dst.toDataURL('image/png'));
-    } catch (e: any) {
-      setError(e?.message || '截图失败');
+    } catch {
+      // keep loading true to show retry
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [displayTitle, shareUrl]);
 
   return (
     <AnimatePresence>
@@ -192,7 +226,6 @@ export default function ShareModal({ onClose }: ShareModalProps) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        // Mobile: full screen; desktop: centered
         className="fixed inset-0 z-[100] flex flex-col"
         style={{ background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(12px)' }}
         onClick={onClose}
@@ -202,7 +235,6 @@ export default function ShareModal({ onClose }: ShareModalProps) {
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.95, opacity: 0, y: 16 }}
           transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-          // Mobile: full width/height; desktop: card
           className="relative flex flex-col w-full max-w-lg mx-auto h-full sm:h-auto sm:my-auto sm:rounded-2xl overflow-hidden"
           style={{
             background: 'linear-gradient(180deg, #111118 0%, #0a0a0f 100%)',
@@ -217,11 +249,10 @@ export default function ShareModal({ onClose }: ShareModalProps) {
             <div className="flex items-center gap-2">
               <span className="text-base">🎋</span>
               <span className="font-zhu text-c-gold text-base text-glow-gold" style={{ letterSpacing: '0.08em' }}>
-                分享祭坛
+                分享{displayTitle}
               </span>
             </div>
             <div className="flex items-center gap-2">
-              {/* Stats */}
               <div className="hidden sm:flex items-center gap-2 text-[10px] font-mono text-c-muted mr-1">
                 <span className="text-c-gold">🔥 {totalIncenseBurned}</span>
                 <span className="text-c-gold">💰 {totalPaperBurned}</span>
@@ -236,23 +267,23 @@ export default function ShareModal({ onClose }: ShareModalProps) {
             </div>
           </div>
 
-          {/* Scrollable content */}
+          {/* Content */}
           <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
 
-            {/* Preview image — altar + QR + URL composite */}
-            <div className="relative rounded-xl overflow-hidden"
-              style={{ background: '#0a0a0f', border: '1px solid rgba(42,42,53,0.6)' }}>
+            {/* Preview */}
+            <div className="relative rounded-xl overflow-hidden flex items-center justify-center"
+              style={{ background: '#0a0a0f', border: '1px solid rgba(42,42,53,0.6)', maxHeight: '45vh', overflow: 'hidden' }}>
               {loading ? (
-                <div className="flex flex-col items-center justify-center py-16 gap-3">
+                <div className="flex flex-col items-center justify-center py-12 sm:py-16 gap-3">
                   <div className="w-7 h-7 rounded-full border-2 border-c-gold border-t-transparent animate-spin" />
                   <span className="text-c-muted text-xs font-mono">生成分享图...</span>
                 </div>
               ) : previewSrc ? (
-                <img src={previewSrc} alt="分享预览" className="w-full object-contain block" />
+                <img src={previewSrc} alt="分享预览" className="w-full h-full object-contain block" style={{ maxHeight: '45vh' }} />
               ) : (
-                <div className="flex flex-col items-center justify-center py-16 gap-3">
+                <div className="flex flex-col items-center justify-center py-12 gap-3 text-center px-4">
                   <div className="text-3xl">⛩️</div>
-                  <span className="text-c-muted text-xs font-mono">{error || '截图失败'}</span>
+                  <span className="text-c-muted text-xs font-mono">截图生成失败</span>
                   <button onClick={retryCapture}
                     className="px-4 py-1.5 rounded text-xs font-mono cursor-pointer"
                     style={{ background: 'rgba(230,57,70,0.15)', border: '1px solid rgba(230,57,70,0.3)', color: '#e63946' }}>
@@ -262,16 +293,16 @@ export default function ShareModal({ onClose }: ShareModalProps) {
               )}
             </div>
 
-            {/* Inline QR for mobile scanning */}
-            {!loading && previewSrc && (
+            {/* Inline QR */}
+            {!loading && (
               <div className="flex items-center gap-3 p-3 rounded-xl"
                 style={{ background: 'rgba(26,26,37,0.6)', border: '1px solid rgba(42,42,53,0.5)' }}>
                 <div className="flex-shrink-0 rounded-lg overflow-hidden" style={{ background: 'white', padding: '6px' }}>
-                  <QRCodeSVG value={SHARE_URL} size={64} bgColor="#ffffff" fgColor="#0a0a0f" level="M" />
+                  <QRCodeSVG value={shareUrl} size={64} bgColor="#ffffff" fgColor="#0a0a0f" level="M" />
                 </div>
                 <div className="flex flex-col gap-1 min-w-0">
-                  <div className="font-zhu text-sm text-c-gold text-glow-gold">扫码祭祖祈福</div>
-                  <div className="text-[10px] text-c-muted font-mono truncate">{SHARE_URL}</div>
+                  <div className="font-zhu text-sm text-c-gold text-glow-gold">{displayTitle} · 扫码祈福</div>
+                  <div className="text-[10px] text-c-muted font-mono truncate">{shareUrl}</div>
                   <div className="text-[10px] text-c-muted font-mono">传承文化 · 数字祭祀</div>
                 </div>
               </div>
@@ -279,11 +310,11 @@ export default function ShareModal({ onClose }: ShareModalProps) {
 
             {/* Action buttons */}
             <div className="grid grid-cols-2 gap-2">
-              {/* Native share (mobile) */}
               {canShare && (
                 <button
                   onClick={handleNativeShare}
-                  className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-mono cursor-pointer transition-all"
+                  disabled={loading || !previewSrc}
+                  className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-mono cursor-pointer transition-all disabled:opacity-40"
                   style={{ background: 'rgba(0,229,255,0.12)', border: '1px solid rgba(0,229,255,0.3)', color: '#00e5ff' }}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -293,8 +324,6 @@ export default function ShareModal({ onClose }: ShareModalProps) {
                   分享图片
                 </button>
               )}
-
-              {/* Download */}
               <button
                 onClick={handleDownload}
                 disabled={loading || !previewSrc}
@@ -306,8 +335,6 @@ export default function ShareModal({ onClose }: ShareModalProps) {
                 </svg>
                 保存图片
               </button>
-
-              {/* WeChat */}
               <button
                 onClick={handleCopyLink}
                 className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-mono cursor-pointer transition-all"
@@ -318,35 +345,30 @@ export default function ShareModal({ onClose }: ShareModalProps) {
                 </svg>
                 {copied ? '已复制' : '复制链接'}
               </button>
-
-              {/* Weibo */}
               <button
-                onClick={() => window.open(`https://service.weibo.com/share/share.php?url=${encodeURIComponent(SHARE_URL)}&title=${encodeURIComponent('我在赛博祭祖为' + (activeAncestor?.name || '先祖') + '上香祈福🙏')}`, '_blank')}
+                onClick={() => window.open(`https://service.weibo.com/share/share.php?url=${encodeURIComponent(shareUrl)}&title=${encodeURIComponent('我在赛博祭祖' + displayTitle + '祈福🙏')}`, '_blank')}
                 className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-mono cursor-pointer transition-all"
                 style={{ background: 'rgba(230,22,45,0.12)', border: '1px solid rgba(230,22,45,0.3)', color: '#e6162d' }}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M10.098 20.323c-3.977.391-7.414-1.406-7.672-4.02-.259-2.609 2.759-5.047 6.74-5.441 3.979-.394 7.413 1.404 7.671 4.018.259 2.6-2.759 5.049-6.739 5.443zM9.05 17.219c-.384.616-1.208.884-1.829.602-.612-.279-.793-.991-.406-1.593.379-.595 1.176-.861 1.793-.601.622.263.82.972.442 1.592zm1.27-1.627c-.141.237-.449.353-.689.253-.236-.09-.313-.361-.177-.586.138-.227.436-.346.672-.24.239.09.315.36.194.573zm.176-2.719c-1.893-.493-4.033.45-4.857 2.118-.836 1.704-.026 3.591 1.886 4.21 1.983.64 4.318-.341 5.132-2.179.8-1.793-.201-3.642-2.161-4.149z"/>
+                  <path d="M10.098 20.323c-3.977.391-7.414-1.406-7.672-4.02-.259-2.609 2.759-5.047 6.74-5.441 3.979-.394 7.413 1.404 7.671 4.018.259 2.6-2.759 5.049-6.739 5.443z"/>
                 </svg>
                 微博
               </button>
             </div>
 
-            {/* URL bar */}
-            {!copied && (
-              <button
-                onClick={handleCopyLink}
-                className="w-full py-2.5 rounded-xl text-xs font-mono text-center transition-all cursor-pointer"
-                style={{ background: 'rgba(26,26,37,0.8)', border: '1px solid rgba(42,42,53,0.5)', color: '#00e5ff' }}
-              >
-                📋 复制分享链接 {SHARE_URL}
-              </button>
-            )}
-            {copied && (
+            {/* Copy bar */}
+            {copied ? (
               <div className="w-full py-2.5 rounded-xl text-xs font-mono text-center"
                 style={{ background: 'rgba(0,229,255,0.1)', border: '1px solid rgba(0,229,255,0.3)', color: '#00e5ff' }}>
                 ✓ 链接已复制到剪贴板
               </div>
+            ) : (
+              <button onClick={handleCopyLink}
+                className="w-full py-2.5 rounded-xl text-xs font-mono text-center cursor-pointer transition-all"
+                style={{ background: 'rgba(26,26,37,0.8)', border: '1px solid rgba(42,42,53,0.5)', color: '#00e5ff' }}>
+                📋 复制分享链接 · {shareUrl}
+              </button>
             )}
           </div>
         </motion.div>

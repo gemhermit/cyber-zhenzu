@@ -136,7 +136,7 @@ function AncestorTablet({
     <div className="relative">
       {/* Main tablet */}
       <div
-        className="relative px-10 py-6 text-center min-w-[400px]"
+        className="relative px-4 sm:px-10 py-4 sm:py-6 text-center min-w-0 sm:min-w-[400px]"
         style={{
           background: 'linear-gradient(180deg, #111118 0%, #0a0a0f 100%)',
           border: '1px solid rgba(244,168,37,0.4)',

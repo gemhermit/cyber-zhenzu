@@ -233,7 +233,7 @@ export default function FamilyTreeView() {
   const displaySurname = surname || '待定';
 
   return (
-    <div className="relative flex flex-col items-center px-4">
+    <div className="relative flex flex-col items-center px-3 sm:px-4 py-4" data-page-capture>
       {/* Header */}
       <div className="text-center mb-6">
         <div className="flex items-center justify-center gap-3 mb-1">
